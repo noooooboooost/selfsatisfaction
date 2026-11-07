@@ -29,15 +29,8 @@
             // Routine Tab States
             const [inputNum, setInputNum] = useState('3276');
             const [steps, setSteps] = useState([]);
-            const [isFinished, setIsFinished] = useState(false);
+            const [finishReason, setFinishReason] = useState('');
             const [message, setMessage] = useState('');
-
-            // Kaprekar Number Tab States
-            const [searchMax, setSearchMax] = useState(10000);
-            const [foundKaprekar, setFoundKaprekar] = useState([]);
-            const [isSearching, setIsSearching] = useState(false);
-            const [checkNum, setCheckNum] = useState(45);
-            const [checkResult, setCheckResult] = useState(null);
 
             // Run Kaprekar Routine (Infinite Digits Support)
             const runRoutine = (valStr) => {
@@ -47,29 +40,30 @@
                 if (len < 2) {
                     setMessage('2桁以上の数値を入力してください。');
                     setSteps([]);
+                    setFinishReason('');
                     return;
                 }
 
                 if (!/^\d+$/.test(current)) {
                     setMessage('半角の数字のみを入力してください。');
                     setSteps([]);
+                    setFinishReason('');
                     return;
                 }
 
-                // Check if all digits are the same (e.g. 1111, 333) -> diff becomes 0
                 if (new Set(current.split('')).size === 1) {
                     setMessage('すべての桁が同じ数字の場合、引き算が0になってしまうため計算できません。（例: 1111など）');
                     setSteps([]);
+                    setFinishReason('');
                     return;
                 }
 
                 setMessage('');
                 const history = [];
                 let currentNumStr = current;
-                let loopDetected = false;
+                let reason = '';
 
                 for (let i = 0; i < 100; i++) {
-                    // Pad with leading zeros if necessary to maintain length
                     while (currentNumStr.length < len) currentNumStr = '0' + currentNumStr;
 
                     const digits = currentNumStr.split('').map(Number);
@@ -90,21 +84,32 @@
                         formattedDiff: nextNumStr
                     });
 
-                    if (diff === 0 || currentNumStr === nextNumStr) {
+                    // 終了判定
+                    if (diff === 0) {
+                        reason = '引き算の結果が「0」になったため終了しました。';
+                        break;
+                    }
+                    if (currentNumStr === nextNumStr) {
+                        reason = `数値が変化しなくなったため、カプレカ数（または定点）「${nextNumStr}」に収束しました。`;
                         break;
                     }
 
-                    // Check for loops
-                    if (history.some(h => h.formattedDiff === nextNumStr && h.step < history.length)) {
-                        loopDetected = true;
+                    // ループ検出
+                    const loopIndex = history.findIndex((h, idx) => h.formattedDiff === nextNumStr && idx < history.length - 1);
+                    if (loopIndex !== -1) {
+                        reason = `同じ数値の循環ループ（周期ルーチン）に入ったため計算を終了しました。`;
                         break;
                     }
 
                     currentNumStr = nextNumStr;
                 }
 
+                if (!reason) {
+                    reason = '100ステップに到達したため計算を終了しました。';
+                }
+
                 setSteps(history);
-                setIsFinished(true);
+                setFinishReason(reason);
             };
 
             useEffect(() => {
@@ -174,7 +179,7 @@
 
                             {steps.length > 0 && (
                                 <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-                                    <div className="p-4 bg-slate-800/80 border-b border-slate-700">
+                                    <div className="p-4 bg-slate-800/80 border-b border-slate-700 flex justify-between items-center">
                                         <h2 className="font-semibold text-slate-200">計算ステップ ({steps.length} 段階)</h2>
                                     </div>
                                     <div className="divide-y divide-slate-700/50">
@@ -196,6 +201,11 @@
                                             </div>
                                         ))}
                                     </div>
+                                    {finishReason && (
+                                        <div className="p-4 bg-indigo-950/40 border-t border-slate-700 text-indigo-300 text-sm flex items-center gap-2">
+                                            <span className="font-bold">【終了理由】</span> {finishReason}
+                                        </div>
+                                    )}
                                 </div>
                             )}
                         </div>
