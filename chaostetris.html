@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>カオステトリス (Chaos Tetris)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { touch-action: manipulation; }
+        canvas { border: 2px solid #334155; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4 select-none">
+
+    <!-- 1. スタート画面 -->
+    <div id="start-screen" class="flex flex-col items-center justify-center my-auto w-full max-w-sm space-y-6 text-center">
+        <div>
+            <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-400 to-purple-500 tracking-wider">
+                😈 カオステトリス
+            </h1>
+            <p class="text-xs text-slate-400 mt-2">モードを選んでゲームスタート！</p>
+        </div>
+
+        <div class="w-full space-y-3">
+            <button onclick="startGame('normal')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-95 transition-all text-emerald-400 font-bold py-4 rounded-2xl flex flex-col items-center shadow-lg">
+                <span class="text-lg">🟩 通常モード</span>
+                <span class="text-xs font-normal text-slate-400">標準的なテトリスミノ（7種類）</span>
+            </button>
+
+            <button onclick="startGame('chaos')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-95 transition-all text-amber-400 font-bold py-4 rounded-2xl flex flex-col items-center shadow-lg">
+                <span class="text-lg">😈 カオスモード</span>
+                <span class="text-xs font-normal text-slate-400">穴あき・ロングなど変形ブロック（3〜5マス）が襲来</span>
+            </button>
+
+            <button onclick="startGame('super_chaos')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-95 transition-all text-purple-400 font-bold py-4 rounded-2xl flex flex-col items-center shadow-lg">
+                <span class="text-lg">🔥 超カオスモード</span>
+                <span class="text-xs font-normal text-slate-400">画面を覆いつくす極悪10マスブロックが出現</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. ゲームプレイ画面（初期状態は隠す） -->
+    <div id="game-screen" class="hidden flex flex-col items-center w-full max-w-sm my-auto">
+        <!-- ヘッダー -->
+        <div class="flex justify-between items-center w-full max-w-[280px] mb-2">
+            <span id="mode-badge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-amber-400">
+                モード
+            </span>
+            <button onclick="showStartScreen()" class="bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs text-slate-300 font-bold px-3 py-1.5 rounded-lg border border-slate-700 shadow-md">
+                🏠 タイトル
+            </button>
+        </div>
+
+        <!-- スコア＆ゲーム画面 -->
+        <div class="flex justify-between w-full max-w-[280px] text-sm font-bold bg-slate-800 p-2.5 rounded-xl border border-slate-700 mb-3">
+            <div>SCORE: <span id="score" class="text-amber-400">0</span></div>
+            <div>LINES: <span id="lines" class="text-cyan-400">0</span></div>
+        </div>
+
+        <div class="relative mb-3">
+            <canvas id="tetris" width="240" height="400" class="bg-slate-950 rounded-lg shadow-2xl"></canvas>
+            <div id="game-over" class="hidden absolute inset-0 bg-black/85 flex flex-col items-center justify-center rounded-lg space-y-3">
+                <p class="text-red-500 font-bold text-2xl">GAME OVER</p>
+                <div class="flex gap-2">
+                    <button onclick="restartGame()" class="bg-red-600 active:scale-95 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-md">
+                        もう一度
+                    </button>
+                    <button onclick="showStartScreen()" class="bg-slate-700 active:scale-95 text-white font-bold px-4 py-2 rounded-lg text-sm shadow-md">
+                        タイトルへ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- スマホ用操作コントローラー -->
+        <div class="w-full max-w-[320px] space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+                <button id="btn-rot" class="bg-indigo-600 active:bg-indigo-700 text-white font-bold py-3 rounded-xl text-lg shadow-md">🔄 回転</button>
+                <button id="btn-up" class="bg-slate-700 active:bg-slate-600 text-white font-bold py-3 rounded-xl text-xs shadow-md">⚡ 一気落下</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button id="btn-left" class="bg-slate-800 active:bg-slate-700 text-white font-bold py-4 rounded-xl text-xl shadow-md">◀</button>
+                <button id="btn-down" class="bg-slate-800 active:bg-slate-700 text-white font-bold py-4 rounded-xl text-xl shadow-md">▼</button>
+                <button id="btn-right" class="bg-slate-800 active:bg-slate-700 text-white font-bold py-4 rounded-xl text-xl shadow-md">▶</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('tetris');
+        const context = canvas.getContext('2d');
+        context.scale(20, 20);
+
+        const COLS = 12;
+        const ROWS = 20;
+
+        function createMatrix(w, h) {
+            const matrix = [];
+            while (h--) matrix.push(new Array(w).fill(0));
+            return matrix;
+        }
+
+        const arena = createMatrix(COLS, ROWS);
+
+        // 1. 通常ミノ
+        const NORMAL_PIECES = [
+            [[0, 1, 0], [1, 1, 1], [0, 0, 0]], // T
+            [[2, 2], [2, 2]],                 // O
+            [[0, 3, 3], [3, 3, 0], [0, 0, 0]], // S
+            [[4, 4, 0], [0, 4, 4], [0, 0, 0]], // Z
+            [[5, 0, 0], [5, 5, 5], [0, 0, 0]], // J
+            [[0, 0, 6], [6, 6, 6], [0, 0, 0]], // L
+            [[0, 7, 0, 0], [0, 7, 0, 0], [0, 7, 0, 0], [0, 7, 0, 0]] // I
+        ];
+
+        // 2. カオスブロック（3〜5マス）
+        const CHAOS_PIECES = [
+            [[8, 8, 8], [8, 0, 8], [0, 0, 0]], // U型
+            [[8, 8, 8, 8, 8]],                 // 5連
+            [[8, 8], [8, 0], [8, 8]],          // C型
+            [[0, 8, 0], [8, 8, 8], [0, 8, 0]], // 十字型
+            [[8, 0, 0], [8, 8, 8], [0, 0, 8]], // 階段型
+            [[8]]                              // 1マス
+        ];
+
+        // 3. 超カオスブロック（凶悪10マス）
+        const SUPER_CHAOS_PIECES = [
+            [[9, 9, 9, 9, 9, 9, 9, 9, 9, 9]],   // 10連横一列
+            [
+                [9, 9, 9, 9],
+                [9, 0, 0, 9],
+                [9, 0, 0, 9],
+                [9, 9, 9, 9]
+            ],                                  // 巨大フレーム
+            [
+                [9, 9, 9, 9, 9],
+                [0, 0, 9, 0, 0],
+                [0, 0, 9, 0, 0],
+                [0, 0, 9, 0, 0],
+                [0, 0, 9, 0, 0]
+            ],                                  // 巨大T字
+            [
+                [9, 9, 9, 0, 0],
+                [0, 9, 9, 9, 0],
+                [0, 0, 9, 9, 9],
+                [0, 0, 0, 9, 0]
+            ]                                   // 超ロング階段
+        ];
+
+        const colors = [
+            null,
+            '#a855f7', '#eab308', '#22c55e', '#ef4444', 
+            '#3b82f6', '#f97316', '#06b6d4', '#ec4899', '#f43f5e'
+        ];
+
+        let currentMode = 'normal';
+        let normalBlockCount = 0;
+        let dropCounter = 0;
+        let dropInterval = 800;
+        let lastTime = 0;
+        let isGameOver = false;
+        let animationId = null;
+
+        const player = {
+            pos: {x: 0, y: 0},
+            matrix: null,
+            score: 0,
+            lines: 0
+        };
+
+        function createPiece() {
+            normalBlockCount++;
+
+            if (currentMode === 'chaos') {
+                if (normalBlockCount >= 3 && Math.random() < 0.7) {
+                    normalBlockCount = 0;
+                    return CHAOS_PIECES[Math.floor(Math.random() * CHAOS_PIECES.length)];
+                }
+            } else if (currentMode === 'super_chaos') {
+                if (normalBlockCount >= 3 && Math.random() < 0.7) {
+                    normalBlockCount = 0;
+                    if (Math.random() < 0.5) {
+                        return SUPER_CHAOS_PIECES[Math.floor(Math.random() * SUPER_CHAOS_PIECES.length)];
+                    } else {
+                        return CHAOS_PIECES[Math.floor(Math.random() * CHAOS_PIECES.length)];
+                    }
+                }
+            }
+
+            return NORMAL_PIECES[Math.floor(Math.random() * NORMAL_PIECES.length)];
+        }
+
+        function drawMatrix(matrix, offset) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        context.fillStyle = colors[value];
+                        context.fillRect(x + offset.x, y + offset.y, 1, 1);
+                        context.strokeStyle = '#0f172a';
+                        context.lineWidth = 0.05;
+                        context.strokeRect(x + offset.x, y + offset.y, 1, 1);
+                    }
+                });
+            });
+        }
+
+        function draw() {
+            context.fillStyle = '#020617';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            drawMatrix(arena, {x: 0, y: 0});
+            drawMatrix(player.matrix, player.pos);
+        }
+
+        function merge(arena, player) {
+            player.matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        arena[y + player.pos.y][x + player.pos.x] = value;
+                    }
+                });
+            });
+        }
+
+        function collide(arena, player) {
+            const [m, o] = [player.matrix, player.pos];
+            for (let y = 0; y < m.length; ++y) {
+                for (let x = 0; x < m[y].length; ++x) {
+                    if (m[y][x] !== 0 && (arena[y + o.y] && arena[y + o.y][x + o.x]) !== 0) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function arenaSweep() {
+            let rowCount = 1;
+            outer: for (let y = arena.length - 1; y >= 0; --y) {
+                for (let x = 0; x < arena[y].length; ++x) {
+                    if (arena[y][x] === 0) continue outer;
+                }
+                const row = arena.splice(y, 1)[0].fill(0);
+                arena.unshift(row);
+                ++y;
+
+                player.score += rowCount * 10;
+                player.lines += 1;
+                rowCount *= 2;
+            }
+            document.getElementById('score').innerText = player.score;
+            document.getElementById('lines').innerText = player.lines;
+        }
+
+        function playerDrop() {
+            player.pos.y++;
+            if (collide(arena, player)) {
+                player.pos.y--;
+                merge(arena, player);
+                playerReset();
+                arenaSweep();
+            }
+            dropCounter = 0;
+        }
+
+        function playerHardDrop() {
+            while (!collide(arena, player)) {
+                player.pos.y++;
+            }
+            player.pos.y--;
+            merge(arena, player);
+            playerReset();
+            arenaSweep();
+            dropCounter = 0;
+        }
+
+        function playerMove(dir) {
+            player.pos.x += dir;
+            if (collide(arena, player)) {
+                player.pos.x -= dir;
+            }
+        }
+
+        function rotate(matrix, dir) {
+            for (let y = 0; y < matrix.length; ++y) {
+                for (let x = 0; x < y; ++x) {
+                    [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
+                }
+            }
+            if (dir > 0) matrix.forEach(row => row.reverse());
+            else matrix.reverse();
+        }
+
+        function playerRotate(dir) {
+            const pos = player.pos.x;
+            let offset = 1;
+            rotate(player.matrix, dir);
+            while (collide(arena, player)) {
+                player.pos.x += offset;
+                offset = -(offset + (offset > 0 ? 1 : -1));
+                if (offset > player.matrix[0].length) {
+                    rotate(player.matrix, -dir);
+                    player.pos.x = pos;
+                    return;
+                }
+            }
+        }
+
+        function playerReset() {
+            player.matrix = createPiece();
+            player.pos.y = 0;
+            player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
+
+            if (collide(arena, player)) {
+                document.getElementById('game-over').classList.remove('hidden');
+                isGameOver = true;
+            }
+        }
+
+        function update(time = 0) {
+            if (isGameOver) return;
+            const deltaTime = time - lastTime;
+            lastTime = time;
+
+            dropCounter += deltaTime;
+            if (dropCounter > dropInterval) {
+                playerDrop();
+            }
+
+            draw();
+            animationId = requestAnimationFrame(update);
+        }
+
+        // --- 画面遷移・モード制御 ---
+        function startGame(mode) {
+            currentMode = mode;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            const badge = document.getElementById('mode-badge');
+            if (mode === 'normal') {
+                badge.innerText = '🟩 通常モード';
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-400';
+            } else if (mode === 'chaos') {
+                badge.innerText = '😈 カオスモード';
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-amber-950 border border-amber-700 text-amber-400';
+            } else {
+                badge.innerText = '🔥 超カオスモード';
+                badge.className = 'text-xs font-bold px-2.5 py-1 rounded-full bg-purple-950 border border-purple-700 text-purple-400';
+            }
+
+            restartGame();
+        }
+
+        function showStartScreen() {
+            if (animationId) cancelAnimationFrame(animationId);
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            if (animationId) cancelAnimationFrame(animationId);
+            arena.forEach(row => row.fill(0));
+            player.score = 0;
+            player.lines = 0;
+            normalBlockCount = 0;
+            document.getElementById('score').innerText = 0;
+            document.getElementById('lines').innerText = 0;
+            document.getElementById('game-over').classList.add('hidden');
+            isGameOver = false;
+            lastTime = performance.now();
+            playerReset();
+            update(lastTime);
+        }
+
+        // スマホ用ボタン
+        document.getElementById('btn-left').onclick = () => playerMove(-1);
+        document.getElementById('btn-right').onclick = () => playerMove(1);
+        document.getElementById('btn-down').onclick = () => playerDrop();
+        document.getElementById('btn-rot').onclick = () => playerRotate(1);
+        document.getElementById('btn-up').onclick = () => playerHardDrop();
+
+        // キーボード操作
+        document.addEventListener('keydown', event => {
+            if (isGameOver || document.getElementById('game-screen').classList.contains('hidden')) return;
+            if (event.keyCode === 37) playerMove(-1);
+            else if (event.keyCode === 39) playerMove(1);
+            else if (event.keyCode === 40) playerDrop();
+            else if (event.keyCode === 38) playerRotate(1);
+            else if (event.keyCode === 32) playerHardDrop();
+        });
+    </script>
+</body>
+</html>
