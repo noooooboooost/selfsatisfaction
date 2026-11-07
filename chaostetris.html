@@ -34,12 +34,12 @@
 
             <button onclick="startGame('super_chaos')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-95 transition-all text-purple-400 font-bold py-4 rounded-2xl flex flex-col items-center shadow-lg">
                 <span class="text-lg">🔥 超カオスモード</span>
-                <span class="text-xs font-normal text-slate-400">画面を覆いつくす極悪10マスブロックが出現</span>
+                <span class="text-xs font-normal text-slate-400">画面の1/4を埋め尽くす15〜24マスの超巨大ミノが出現</span>
             </button>
         </div>
     </div>
 
-    <!-- 2. ゲームプレイ画面（初期状態は隠す） -->
+    <!-- 2. ゲームプレイ画面 -->
     <div id="game-screen" class="hidden flex flex-col items-center w-full max-w-sm my-auto">
         <!-- ヘッダー -->
         <div class="flex justify-between items-center w-full max-w-[280px] mb-2">
@@ -104,47 +104,54 @@
 
         // 1. 通常ミノ
         const NORMAL_PIECES = [
-            [[0, 1, 0], [1, 1, 1], [0, 0, 0]], // T
-            [[2, 2], [2, 2]],                 // O
-            [[0, 3, 3], [3, 3, 0], [0, 0, 0]], // S
-            [[4, 4, 0], [0, 4, 4], [0, 0, 0]], // Z
-            [[5, 0, 0], [5, 5, 5], [0, 0, 0]], // J
-            [[0, 0, 6], [6, 6, 6], [0, 0, 0]], // L
-            [[0, 7, 0, 0], [0, 7, 0, 0], [0, 7, 0, 0], [0, 7, 0, 0]] // I
+            [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+            [[2, 2], [2, 2]],
+            [[0, 3, 3], [3, 3, 0], [0, 0, 0]],
+            [[4, 4, 0], [0, 4, 4], [0, 0, 0]],
+            [[5, 0, 0], [5, 5, 5], [0, 0, 0]],
+            [[0, 0, 6], [6, 6, 6], [0, 0, 0]],
+            [[0, 7, 0, 0], [0, 7, 0, 0], [0, 7, 0, 0], [0, 7, 0, 0]]
         ];
 
         // 2. カオスブロック（3〜5マス）
         const CHAOS_PIECES = [
-            [[8, 8, 8], [8, 0, 8], [0, 0, 0]], // U型
-            [[8, 8, 8, 8, 8]],                 // 5連
-            [[8, 8], [8, 0], [8, 8]],          // C型
-            [[0, 8, 0], [8, 8, 8], [0, 8, 0]], // 十字型
-            [[8, 0, 0], [8, 8, 8], [0, 0, 8]], // 階段型
-            [[8]]                              // 1マス
+            [[8, 8, 8], [8, 0, 8], [0, 0, 0]],
+            [[8, 8, 8, 8, 8]],
+            [[8, 8], [8, 0], [8, 8]],
+            [[0, 8, 0], [8, 8, 8], [0, 8, 0]],
+            [[8, 0, 0], [8, 8, 8], [0, 0, 8]],
+            [[8]]
         ];
 
-        // 3. 超カオスブロック（凶悪10マス）
+        // 3. 超カオスブロック（15〜24マス：画面の約1/4〜1/3を占める超特大サイズ）
         const SUPER_CHAOS_PIECES = [
-            [[9, 9, 9, 9, 9, 9, 9, 9, 9, 9]],   // 10連横一列
+            // 4x4 巨大正方形 (16マス)
+            [
+                [9, 9, 9, 9],
+                [9, 9, 9, 9],
+                [9, 9, 9, 9],
+                [9, 9, 9, 9]
+            ],
+            // 超巨大L字 (15マス)
+            [
+                [9, 0, 0, 0, 0],
+                [9, 0, 0, 0, 0],
+                [9, 0, 0, 0, 0],
+                [9, 0, 0, 0, 0],
+                [9, 9, 9, 9, 9]
+            ],
+            // 横幅ピッタリ壁 (24マス: 12列×2行)
+            [
+                [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9],
+                [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9]
+            ],
+            // 巨大フレーム (12マス)
             [
                 [9, 9, 9, 9],
                 [9, 0, 0, 9],
                 [9, 0, 0, 9],
                 [9, 9, 9, 9]
-            ],                                  // 巨大フレーム
-            [
-                [9, 9, 9, 9, 9],
-                [0, 0, 9, 0, 0],
-                [0, 0, 9, 0, 0],
-                [0, 0, 9, 0, 0],
-                [0, 0, 9, 0, 0]
-            ],                                  // 巨大T字
-            [
-                [9, 9, 9, 0, 0],
-                [0, 9, 9, 9, 0],
-                [0, 0, 9, 9, 9],
-                [0, 0, 0, 9, 0]
-            ]                                   // 超ロング階段
+            ]
         ];
 
         const colors = [
@@ -177,13 +184,9 @@
                     return CHAOS_PIECES[Math.floor(Math.random() * CHAOS_PIECES.length)];
                 }
             } else if (currentMode === 'super_chaos') {
-                if (normalBlockCount >= 3 && Math.random() < 0.7) {
+                if (normalBlockCount >= 3 && Math.random() < 0.8) {
                     normalBlockCount = 0;
-                    if (Math.random() < 0.5) {
-                        return SUPER_CHAOS_PIECES[Math.floor(Math.random() * SUPER_CHAOS_PIECES.length)];
-                    } else {
-                        return CHAOS_PIECES[Math.floor(Math.random() * CHAOS_PIECES.length)];
-                    }
+                    return SUPER_CHAOS_PIECES[Math.floor(Math.random() * SUPER_CHAOS_PIECES.length)];
                 }
             }
 
@@ -330,7 +333,6 @@
             animationId = requestAnimationFrame(update);
         }
 
-        // --- 画面遷移・モード制御 ---
         function startGame(mode) {
             currentMode = mode;
             document.getElementById('start-screen').classList.add('hidden');
