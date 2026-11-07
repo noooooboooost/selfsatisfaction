@@ -30,6 +30,7 @@
             const [inputNum, setInputNum] = useState('3276');
             const [steps, setSteps] = useState([]);
             const [finishReason, setFinishReason] = useState('');
+            const [finishType, setFinishType] = useState(''); // 'kaprekar', 'loop', 'zero', 'max'
             const [message, setMessage] = useState('');
 
             // Run Kaprekar Routine (Infinite Digits Support)
@@ -41,6 +42,7 @@
                     setMessage('2桁以上の数値を入力してください。');
                     setSteps([]);
                     setFinishReason('');
+                    setFinishType('');
                     return;
                 }
 
@@ -48,6 +50,7 @@
                     setMessage('半角の数字のみを入力してください。');
                     setSteps([]);
                     setFinishReason('');
+                    setFinishType('');
                     return;
                 }
 
@@ -55,6 +58,7 @@
                     setMessage('すべての桁が同じ数字の場合、引き算が0になってしまうため計算できません。（例: 1111など）');
                     setSteps([]);
                     setFinishReason('');
+                    setFinishType('');
                     return;
                 }
 
@@ -62,6 +66,7 @@
                 const history = [];
                 let currentNumStr = current;
                 let reason = '';
+                let type = '';
 
                 for (let i = 0; i < 100; i++) {
                     while (currentNumStr.length < len) currentNumStr = '0' + currentNumStr;
@@ -87,17 +92,20 @@
                     // 終了判定
                     if (diff === 0) {
                         reason = '引き算の結果が「0」になったため終了しました。';
+                        type = 'zero';
                         break;
                     }
                     if (currentNumStr === nextNumStr) {
-                        reason = `数値が変化しなくなったため、カプレカ数（または定点）「${nextNumStr}」に収束しました。`;
+                        reason = `数値が変化しなくなったため、カプレカ数（定点）「${nextNumStr}」に収束しました！`;
+                        type = 'kaprekar';
                         break;
                     }
 
                     // ループ検出
                     const loopIndex = history.findIndex((h, idx) => h.formattedDiff === nextNumStr && idx < history.length - 1);
                     if (loopIndex !== -1) {
-                        reason = `同じ数値の循環ループ（周期ルーチン）に入ったため計算を終了しました。`;
+                        reason = `同じ数値の循環ループ（周期ルーチン）を検出しました！`;
+                        type = 'loop';
                         break;
                     }
 
@@ -106,15 +114,31 @@
 
                 if (!reason) {
                     reason = '100ステップに到達したため計算を終了しました。';
+                    type = 'max';
                 }
 
                 setSteps(history);
                 setFinishReason(reason);
+                setFinishType(type);
             };
 
             useEffect(() => {
                 runRoutine(inputNum);
             }, []);
+
+            // 終了タイプに応じたカラーやバッジのデザインを切り替え
+            const getFinishStyle = () => {
+                switch(finishType) {
+                    case 'kaprekar':
+                        return 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300';
+                    case 'loop':
+                        return 'bg-amber-950/60 border-amber-500/50 text-amber-300';
+                    case 'zero':
+                        return 'bg-blue-950/60 border-blue-500/50 text-blue-300';
+                    default:
+                        return 'bg-slate-800 border-slate-700 text-slate-300';
+                }
+            };
 
             return (
                 <div className="max-w-2xl mx-auto px-4 py-8">
@@ -183,27 +207,54 @@
                                         <h2 className="font-semibold text-slate-200">計算ステップ ({steps.length} 段階)</h2>
                                     </div>
                                     <div className="divide-y divide-slate-700/50">
-                                        {steps.map((s) => (
-                                            <div key={s.step} className="p-4 flex items-center justify-between hover:bg-slate-700/30 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-indigo-400">
-                                                        {s.step}
-                                                    </span>
-                                                    <div className="text-sm font-mono">
-                                                        <span className="text-slate-400">{s.desc}</span>
-                                                        <span className="text-slate-600 mx-2">-</span>
-                                                        <span className="text-slate-400">{s.asc}</span>
+                                        {steps.map((s, idx) => {
+                                            const isLast = idx === steps.length - 1;
+                                            return (
+                                                <div 
+                                                    key={s.step} 
+                                                    className={`p-4 flex items-center justify-between transition-colors ${
+                                                        isLast 
+                                                            ? finishType === 'kaprekar' 
+                                                                ? 'bg-emerald-950/20 font-semibold' 
+                                                                : finishType === 'loop' 
+                                                                    ? 'bg-amber-950/20 font-semibold' 
+                                                                    : 'bg-slate-700/30'
+                                                            : 'hover:bg-slate-700/30'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                            isLast && finishType === 'kaprekar' ? 'bg-emerald-600 text-white' :
+                                                            isLast && finishType === 'loop' ? 'bg-amber-600 text-white' :
+                                                            'bg-slate-700 text-indigo-400'
+                                                        }`}>
+                                                            {s.step}
+                                                        </span>
+                                                        <div className="text-sm font-mono">
+                                                            <span className="text-slate-400">{s.desc}</span>
+                                                            <span className="text-slate-600 mx-2">-</span>
+                                                            <span className="text-slate-400">{s.asc}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className={`font-mono font-bold text-lg ${
+                                                        isLast && finishType === 'kaprekar' ? 'text-emerald-400 scale-105' :
+                                                        isLast && finishType === 'loop' ? 'text-amber-400 scale-105' :
+                                                        'text-indigo-300'
+                                                    }`}>
+                                                        = {s.formattedDiff}
                                                     </div>
                                                 </div>
-                                                <div className="font-mono font-bold text-indigo-300 text-lg">
-                                                    = {s.formattedDiff}
-                                                </div>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                     {finishReason && (
-                                        <div className="p-4 bg-indigo-950/40 border-t border-slate-700 text-indigo-300 text-sm flex items-center gap-2">
-                                            <span className="font-bold">【終了理由】</span> {finishReason}
+                                        <div className={`p-4 border-t text-sm flex items-center gap-2 ${getFinishStyle()}`}>
+                                            <span className="font-bold text-base">
+                                                {finishType === 'kaprekar' ? '🎯 【カプレカ数 達成】' :
+                                                 finishType === 'loop' ? '🔄 【循環ループ 検出】' :
+                                                 finishType === 'zero' ? 'ℹ️ 【ゼロ収束】' : '📌 【終了】'}
+                                            </span> 
+                                            <span>{finishReason}</span>
                                         </div>
                                     )}
                                 </div>
