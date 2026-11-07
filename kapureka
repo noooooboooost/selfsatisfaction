@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>カプレカ数＆カプレカルーチン シミュレーター</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & Babel for browser-side JSX -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+      body { font-family: 'Noto Sans JP', 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-t-screen antialiased selection:bg-indigo-500 selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('routine');
+            
+            // Routine Tab States
+            const [inputNum, setInputNum] = useState('3276');
+            const [steps, setSteps] = useState([]);
+            const [isFinished, setIsFinished] = useState(false);
+            const [message, setMessage] = useState('');
+
+            // Kaprekar Number Tab States
+            const [searchMax, setSearchMax] = useState(10000);
+            const [foundKaprekar, setFoundKaprekar] = useState([]);
+            const [isSearching, setIsSearching] = useState(false);
+            const [checkNum, setCheckNum] = useState(45);
+            const [checkResult, setCheckResult] = useState(null);
+
+            // Run Kaprekar Routine (6174 / 495 algorithm)
+            const runRoutine = (valStr) => {
+                let current = valStr.trim();
+                const len = current.length;
+                
+                if (len < 3 || len > 4) {
+                    setMessage('3桁または4桁の数字を入力してください。');
+                    setSteps([]);
+                    return;
+                }
+
+                if (!/^\d+$/.test(current)) {
+                    setMessage('半角の数字のみを入力してください。');
+                    setSteps([]);
+                    return;
+                }
+
+                // Check if all digits are the same (e.g. 1111, 333)
+                if (new Set(current.split('')).size === 1) {
+                    setMessage('すべての桁が同じ数字の場合、引き算が 0 になってしまうため計算できません（例: 1111）。');
+                    setSteps([]);
+                    return;
+                }
+
+                setMessage('');
+                const history = [];
+                let currentNumStr = current;
+                let targetConstant = len === 4 ? 6174 : 495;
+                let loopDetected = false;
+
+                for (let i = 0; i < 15; i++) {
+                    // Pad with leading zeros if necessary
+                    while (currentNumStr.length < len) currentNumStr = '0' + currentNumStr;
+
+                    const digits = currentNumStr.split('').map(Number);
+                    const asc = [...digits].sort((a, b) => a - b).join('');
+                    const desc = [...digits].sort((a, b) => b - a).join('');
+                    
+                    const ascNum = parseInt(asc, 10);
+                    const descNum = parseInt(desc, 10);
+                    const diff = descNum - ascNum;
+
+                    const nextNumStr = String(diff).padStart(len, '0');
+
+                    history.push({
+                        step: i + 1,
+                        asc,
+                        desc,
+                        diff,
+                        formattedDiff: nextNumStr
+                    });
+
+                    if (diff === targetConstant || diff === 0 || currentNumStr === nextNumStr) {
+                        break;
+                    }
+                    if (history.some(h => h.formattedDiff === nextNumStr && h.step < history.length)) {
+                        loopDetected = true;
+                        break;
+                    }
+                    currentNumStr = nextNumStr;
+                }
+
+                setSteps(history);
+                setIsFinished(true);
+            };
+
+            // Check traditional Kaprekar number (n^2 split sum)
+            const checkKaprekarNum = (n) => {
+                if (n <= 0) return { isKaprekar: false, details: [] };
+                const square = n * n;
+                const sqStr = String(square);
+                const nStr = String(n);
+                const splits = [];
+
+                for (let i = 1; i < sqStr.length; i++) {
+                    const leftStr = sqStr.slice(0, i);
+                    const rightStr = sqStr.slice(i);
+                    const left = parseInt(leftStr, 10);
+                    const right = parseInt(rightStr, 10);
+
+                    if (right > 0 && left + right === n) {
+                        splits.push({ left, right, leftStr, rightStr });
+                    }
+                }
+
+                // Special case for 1
+                if (n === 1) {
+                    return { isKaprekar: true, square, splits: [{ left: 0, right: 1, leftStr: '0', rightStr: '1' }] };
+                }
+
+                return {
+                    isKaprekar: splits.length > 0,
+                    square,
+                    splits
+                };
+            };
+
+            // Search Kaprekar numbers up to limit
+            const handleSearch = () => {
+                setIsSearching(true);
+                setTimeout(() => {
+                    const results = [];
+                    for (let i = 1; i <= searchMax; i++) {
+                        const res = checkKaprekarNum(i);
+                        if (res.isKaprekar) {
+                            results.push({ num: i, square: res.square, splits: res.splits });
+                        }
+                    }
+                    setFoundKaprekar(results);
+                    setIsSearching(false);
+                }, 50);
+            };
+
+            useEffect(() => {
+                runRoutine(inputNum);
+                setCheckResult(checkKaprekarNum(checkNum));
+            }, []);
+
+            return (
+                <div className="max-w-4xl mx-auto px-4 py-8">
+                    <header className="text-center mb-8">
+                        <span className="bg-indigo-500/10 text-indigo-400 text-xs font-semibold px-3 py-1 rounded-full border border-indigo-500/20">
+                            数論探求アプリ
+                        </span>
+                        <h1 className="text-3xl font-bold mt-2 text-white">カプレカの世界</h1>
+                        <p className="text-slate-400 text-sm mt-1">「カプレカ定数（ルーチン）」と本来の「カプレカ数」を体験・探索</p>
+                    </header>
+
+                    {/* Navigation Tabs */}
+                    <div className="flex justify-center mb-8">
+                        <div className="bg-slate-800 p-1 rounded-xl border border-slate-700 flex space-x-1">
+                            <button
+                                onClick={() => setActiveTab('routine')}
+                                className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                    activeTab === 'routine'
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                }`}
+                            >
+                                🔢 カプレカルーチン (6174)
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('number')}
+                                className={`px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                                    activeTab === 'number'
+                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                                        : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                                }`}
+                            >
+                                ✨ カプレカ数 判定・検索
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Tab 1: Routine */}
+                    {activeTab === 'routine' && (
+                        <div className="space-y-6">
+                            <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 shadow-xl">
+                                <h2 className="text-lg font-semibold text-white mb-2">カプレカルーチンとは？</h2>
+                                <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                                    異なる数字を含む3桁または4桁の整数から始め、構成数字を並び替えた最大値から最小値を引く操作を繰り返すと、必ず一定の数（4桁なら <span className="text-indigo-400 font-bold">6174</span>、3桁なら <span className="text-indigo-400 font-bold">495</span>）に行き着く現象です。
+                                </p>
+
+                                <div className="flex flex-wrap items-center gap-3 pt-2">
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="block text-xs font-medium text-slate-400 mb-1">3桁または4桁の数字を入力</label>
+                                        <input
+                                            type="text"
+                                            maxLength="4"
+                                            value={inputNum}
+                                            onChange={(e) => setInputNum(e.target.value)}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-indigo-500 font-mono text-lg"
+                                            placeholder="例: 3276"
+                                        />
+                                    </div>
+                                    <div className="flex items-end gap-2 pt-5">
+                                        <button
+                                            onClick={() => runRoutine(inputNum)}
+                                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-6 py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/20"
+                                        >
+                                            計算する
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const presets = ['3276', '1234', '8082', '100', '983', '528'];
+                                                const rand = presets[Math.floor(Math.random() * presets.length)];
+                                                setInputNum(rand);
+                                                runRoutine(rand);
+                                            }}
+                                            className="bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2.5 rounded-xl transition text-sm flex items-center gap-1"
+                                        >
+                                            🎲 ランダム
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {message && (
+                                    <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 text-amber-300 text-sm rounded-xl">
+                                        {message}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Steps Result */}
+                            {steps.length > 0 && (
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">計算ステップ ({steps.length} 段階)</h3>
+                                    <div className="space-y-2">
+                                        {steps.map((s, idx) => {
+                                            const isTarget = (inputNum.length === 4 && s.diff === 6174) || (inputNum.length === 3 && s.diff === 495);
+                                            return (
+                                                <div 
+                                                    key={idx} 
+                                                    className={`p-4 rounded-xl border flex items-center justify-between transition-all ${
+                                                        isTarget 
+                                                            ? 'bg-indigo-950/40 border-indigo-500/50 shadow-lg shadow-indigo-500/10' 
+                                                            : 'bg-slate-800/50 border-slate-700/60'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center space-x-4">
+                                                        <span className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold text-slate-300">
+                                                            {s.step}
+                                                        </span>
+                                                        <div className="font-mono text-sm sm:text-base text-slate-200">
+                                                            <span className="text-indigo-300 font-bold">{s.desc}</span>
+                                                            <span className="text-slate-500 mx-2">-</span>
+                                                            <span className="text-slate-400">{s.asc}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="font-mono text-lg font-bold text-white flex items-center gap-2">
+                                                        <span className="text-slate-500">=</span>
+                                                        <span className={isTarget ? 'text-indigo-400 text-xl' : 'text-emerald-400'}>
+                                                            {s.formattedDiff}
+                                                        </span>
+                                                        {isTarget && <span className="text-xs bg-indigo-500 text-white px-2 py-0.5 rounded-full">定数到達 🎉</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tab 2: Kaprekar Number */}
+                    {activeTab === 'number' && (
+                        <div className="space-y-6">
+                            <div className="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-6 shadow-xl">
+                                <h2 className="text-lg font-semibold text-white mb-2">本来の「カプレカ数」とは？</h2>
+                                <p className="text-slate-300 text-sm leading-relaxed mb-4">
+                                    2乗した数を左右に2つに分割し、その和が元の数に戻る整数のことです（例: <span className="text-indigo-400 font-semibold">45</span> → $45^2 = 2025$ → $20 + 25 = 45$）。
+                                </p>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                                    <div className="bg-slate-900/60 border border-slate-700/60 p-4 rounded-xl">
+                                        <label className="block text-xs font-medium text-slate-400 mb-1">個別チェック</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="number"
+                                                value={checkNum}
+                                                onChange={(e) => {
+                                                    const val = parseInt(e.target.value, 10) || 0;
+                                                    setCheckNum(val);
+                                                    setCheckResult(checkKaprekarNum(val));
+                                                }}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-indigo-500 font-mono"
+                                            />
+                                        </div>
+                                        {checkResult && (
+                                            <div className="mt-3 text-sm">
+                                                <p className="text-slate-400">
+                                                    $ {checkNum}^2 = <span className="text-white font-mono">{checkResult.square}</span> $
+                                                </p>
+                                                {checkResult.isKaprekar ? (
+                                                    <div className="mt-2 text-emerald-400 font-semibold flex items-center gap-1">
+                                                        ✨ カプレカ数です！
+                                                    </div>
+                                                ) : (
+                                                    <div className="mt-2 text-slate-500">
+                                                        カプレカ数ではありません。
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="bg-slate-900/60 border border-slate-700/60 p-4 rounded-xl flex flex-col justify-between">
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-400 mb-1">範囲一括検索</label>
+                                            <p className="text-xs text-slate-400">1 〜 {searchMax} までのカプレカ数を一括で探します。</p>
+                                        </div>
+                                        <button
+                                            onClick={handleSearch}
+                                            disabled={isSearching}
+                                            className="mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-medium px-4 py-2.5 rounded-xl transition text-sm shadow-lg shadow-indigo-600/20"
+                                        >
+                                            {isSearching ? '検索中...' : '検索を実行'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Search Results */}
+                            {foundKaprekar.length > 0 && (
+                                <div className="space-y-3">
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">発見されたカプレカ数 ({foundKaprekar.length}件)</h3>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {foundKaprekar.map((item, idx) => (
+                                            <div key={idx} className="bg-slate-800/50 border border-slate-700/60 p-4 rounded-xl flex items-center justify-between">
+                                                <div>
+                                                    <span className="text-lg font-bold text-indigo-400 font-mono">{item.num}</span>
+                                                    <span className="text-xs text-slate-400 ml-2">($ {item.square} $)</span>
+                                                </div>
+                                                <div className="text-xs text-slate-300 font-mono">
+                                                    {item.splits.map((s, i) => (
+                                                        <span key={i}>{s.leftStr} + {s.rightStr}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
