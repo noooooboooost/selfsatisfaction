@@ -80,7 +80,6 @@
       font-weight: bold;
     }
     
-    /* 画面下部の操作案内ラベル（被らないよう最下部に配置） */
     .hud-bottom {
       background: rgba(0, 0, 0, 0.7);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -148,7 +147,7 @@
   <div class="ui-layer">
     <div class="hud-top">
       <div class="title">ミニラグビー：5mペナルティタックル練習</div>
-      <div class="subtitle">相手5mから突進！1.0m〜1.5mで画面タップ！</div>
+      <div class="subtitle">相手がランダムスピードで突進！1.0m〜1.5mで画面タップ！</div>
       <div class="stats">
         <div>スコア: <span id="score">0</span></div>
         <div>回数: <span id="tries">0</span>/5</div>
@@ -166,9 +165,9 @@
   <div id="start-modal" class="modal">
     <div class="modal-title">ミニラグビー 5mペナルティ対策</div>
     <div class="modal-desc">
-      ・相手は5m後ろからタップ＆突進。<br>
+      ・相手は5m後ろから、<b>毎回ランダムなスピード（緩急）</b>で突進してきます。<br>
       ・味方FWも前に出てゲインラインを潰しにいきます。<br>
-      ・間合いが<b>「1.5m〜1.0m」</b>になった瞬間に<b>画面のどこでもタップ</b>（PCはSpaceキー）して腰を落としましょう！
+      ・間合いが<b>「1.5m〜1.0m」</b>になった瞬間に<b>画面のどこでもタップ</b>して腰を落としましょう！
     </div>
     <button class="start-btn" onclick="startGame()">練習スタート！</button>
   </div>
@@ -200,7 +199,7 @@
   const maxTries = 5;
   
   let distance = 5.0; 
-  let relativeSpeed = 0.08; 
+  let relativeSpeed = 0.08; // 毎本ランダムに変更されます
   let isTackled = false;
   let resultHistory = [];
 
@@ -208,9 +207,7 @@
   const scoreEl = document.getElementById('score');
   const triesEl = document.getElementById('tries');
 
-  // 画面全体どこでもタップ・クリックでアクション発動
   container.addEventListener('pointerdown', (e) => {
-    // モーダル表示中は無視
     if (state === 'RUNNING') {
       e.preventDefault();
       triggerTackle();
@@ -248,7 +245,9 @@
     triesEl.innerText = currentTry;
     
     distance = 5.0;
-    relativeSpeed = 0.07 + Math.random() * 0.035; 
+    // 【スピードランダム化】毎回、遅め〜速め（0.05 〜 0.12 の幅）でランダムに変動
+    relativeSpeed = 0.05 + Math.random() * 0.07; 
+    
     isTackled = false;
     state = 'RUNNING';
   }
@@ -321,9 +320,9 @@
     summaryHtml += "</div><br>";
 
     if (score >= 400) {
-      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！5mの間合いからでも完璧なタイミングで低く入れてます！</b>";
+      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！スピードの緩急に対応して完璧なタイミングで入れてます！</b>";
     } else {
-      summaryHtml += "1.0m〜1.5mの間合いに相手が入る瞬間に低く入れるよう繰り返し練習しましょう！";
+      summaryHtml += "スピードが毎回変わる中でも、相手が1.0m〜1.5mに入る瞬間を見極める練習を続けましょう！";
     }
 
     desc.innerHTML = summaryHtml;
@@ -349,7 +348,6 @@
 
     const horizon = height * 0.38;
     
-    // 空とグラウンド
     const skyGradient = ctx.createLinearGradient(0, 0, 0, horizon);
     skyGradient.addColorStop(0, '#0f172a');
     skyGradient.addColorStop(1, '#1e3a8a');
@@ -362,7 +360,6 @@
     ctx.fillStyle = grassGradient;
     ctx.fillRect(0, horizon, width, height - horizon);
 
-    // 遠近グリッド
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 2;
     const vpX = width / 2;
@@ -375,7 +372,6 @@
       ctx.stroke();
     }
 
-    // 距離マーカー線
     const drawDistanceLine = (distMeter, label, lineColor) => {
       const scale = Math.pow(0.65, distMeter);
       const lineY = horizon + (height - horizon) * scale;
@@ -393,7 +389,6 @@
       ctx.fillText(label, vpX + lineWidthAtY + 8, lineY + 4);
     };
 
-    // 理想ゾーンハイライト
     const y15 = horizon + (height - horizon) * Math.pow(0.65, 1.5);
     const y10 = horizon + (height - horizon) * Math.pow(0.65, 1.0);
     const w15 = width * Math.pow(0.65, 1.5);
@@ -414,7 +409,6 @@
     drawDistanceLine(1.0, "1.0m [理想下限]", "#00ffcc");
     drawDistanceLine(0.5, "0.5m", "rgba(255,0,0,0.6)");
 
-    // 相手プレイヤーの描画
     if (state === 'RUNNING' || state === 'RESULT_PAUSE') {
       const scale = Math.pow(0.65, distance);
       const runnerY = horizon + (height - horizon) * scale;
@@ -423,30 +417,25 @@
       ctx.save();
       ctx.translate(vpX, runnerY);
 
-      // 影
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.beginPath();
       ctx.ellipse(0, 0, runnerSize * 0.5, runnerSize * 0.15, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 足
       ctx.fillStyle = '#111';
       ctx.fillRect(-runnerSize * 0.2, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
       ctx.fillRect(runnerSize * 0.08, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
 
-      // 胴体
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
       ctx.roundRect(-runnerSize * 0.3, -runnerSize * 0.9, runnerSize * 0.6, runnerSize * 0.55, 8);
       ctx.fill();
 
-      // 頭
       ctx.fillStyle = '#fca5a5';
       ctx.beginPath();
       ctx.arc(0, -runnerSize * 1.05, runnerSize * 0.18, 0, Math.PI * 2);
       ctx.fill();
 
-      // ボール
       ctx.fillStyle = '#ea580c';
       ctx.beginPath();
       ctx.ellipse(-runnerSize * 0.15, -runnerSize * 0.7, runnerSize * 0.15, runnerSize * 0.1, Math.PI / 4, 0, Math.PI * 2);
@@ -454,7 +443,6 @@
 
       ctx.restore();
 
-      // 【レイアウト修正】残距離（メートル表示）を相手選手と被らない画面下側にすっきり配置
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 24px monospace';
       ctx.textAlign = 'center';
