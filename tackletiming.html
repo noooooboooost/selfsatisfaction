@@ -127,10 +127,27 @@
       border-radius: 12px;
     }
 
+    /* フィジカルモード時の案内バッジ */
+    .physical-badge {
+      font-size: 14px;
+      font-weight: bold;
+      color: #00ffcc;
+      background: rgba(0,0,0,0.8);
+      border: 2px solid #00ffcc;
+      padding: 10px 20px;
+      border-radius: 20px;
+      animation: pulse-physical 1.5s infinite;
+    }
+
     @keyframes pulse {
       0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
       70% { box-shadow: 0 0 0 20px rgba(255, 77, 77, 0); }
       100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+    }
+    @keyframes pulse-physical {
+      0% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
+      70% { box-shadow: 0 0 0 15px rgba(0, 255, 204, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
     }
 
     .modal {
@@ -147,8 +164,28 @@
       z-index: 10;
     }
     .modal-title { font-size: 22px; font-weight: bold; color: #ffd700; margin-bottom: 12px; }
-    .modal-desc { font-size: 13px; color: #ddd; line-height: 1.6; margin-bottom: 20px; text-align: left; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;}
+    .modal-desc { font-size: 13px; color: #ddd; line-height: 1.6; margin-bottom: 16px; text-align: left; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;}
     
+    .mode-select {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .mode-btn {
+      background: #333;
+      border: 2px solid #555;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .mode-btn.active {
+      background: #ff4d4d;
+      border-color: #fff;
+    }
+
     .start-btn {
       background: #28a745;
       color: white;
@@ -187,18 +224,24 @@
   <div class="ui-layer">
     <div class="hud-top">
       <div class="title">ミニラグビー：5mペナルティタックル練習</div>
-      <div class="subtitle">相手5mから突進！味方の前進スピードを加味して1.0m〜1.5mでタップ！</div>
+      <div class="subtitle" id="sub-mode-desc">相手5mから突進！1.0m〜1.5mで操作！</div>
       <div class="stats">
         <div>スコア: <span id="score">0</span></div>
         <div>回数: <span id="tries">0</span>/5</div>
       </div>
     </div>
 
-    <div class="action-zone">
+    <!-- タップモード用UI -->
+    <div class="action-zone" id="tap-action-zone">
       <div class="tap-btn" id="tackle-btn">
         <div class="tap-inner-circle">腰落</div>
       </div>
       <div class="btn-label">ここをタップ！</div>
+    </div>
+
+    <!-- フィジカルモード用UI -->
+    <div class="action-zone hidden" id="physical-action-zone">
+      <div class="physical-badge">スマホを持ったまま実際に沈み込め！</div>
     </div>
   </div>
 
@@ -207,11 +250,18 @@
   <!-- Start Modal -->
   <div id="start-modal" class="modal">
     <div class="modal-title">ミニラグビー 5mペナルティ対策</div>
-    <div class="modal-desc">
-      ・相手は5m後ろからタップ＆突進。<br>
-      ・自分（FW）も前に出てゲインラインを潰しにいきます。<br>
-      ・お互いが近づく<b>「相対速度」</b>を考慮し、2人の間合いが<b>「1.5m〜1.0m」</b>になった瞬間に<b>【腰落】</b>ボタンを押してください！
+    
+    <div style="font-size: 13px; color: #aaa; margin-bottom: 8px;">操作モードを選択：</div>
+    <div class="mode-select">
+      <button class="mode-btn active" id="btn-mode-tap" onclick="selectMode('tap')">👆 タップモード</button>
+      <button class="mode-btn" id="btn-mode-physical" onclick="selectMode('physical')">🏃‍♂️ フィジカルモード</button>
     </div>
+
+    <div class="modal-desc" id="mode-instruction">
+      ・画面下の<b>【腰落】ボタン</b>を1.0m〜1.5mの距離でタップ！<br>
+      ・机の上や手軽にタイミング練習をしたい時におすすめです。
+    </div>
+
     <button class="start-btn" onclick="startGame()">練習スタート！</button>
   </div>
 
@@ -236,13 +286,12 @@
   resize();
 
   let state = 'INIT';
+  let playMode = 'tap'; // 'tap' or 'physical'
   let score = 0;
   let currentTry = 0;
   const maxTries = 5;
   
-  // 5メートルからスタート
   let distance = 5.0; 
-  // 相対速度（相手の突進速度 ＋ 自分の前進速度の合算値）
   let relativeSpeed = 0.08; 
   let isTackled = false;
   let resultHistory = [];
@@ -252,9 +301,60 @@
   const scoreEl = document.getElementById('score');
   const triesEl = document.getElementById('tries');
 
+  // モード選択
+  function selectMode(mode) {
+    playMode = mode;
+    document.getElementById('btn-mode-tap').classList.toggle('active', mode === 'tap');
+    document.getElementById('btn-mode-physical').classList.toggle('active', mode === 'physical');
+    
+    const inst = document.getElementById('mode-instruction');
+    if (mode === 'tap') {
+      inst.innerHTML = "・画面下の<b>【腰落】ボタン</b>を1.0m〜1.5mの距離でタップ！<br>・机の上や手軽にタイミング練習をしたい時におすすめです。";
+    } else {
+      inst.innerHTML = "・両手でスマホを胸の前に持ち、1.0m〜1.5mの距離で<b>実際にグッと腰を落として素早く沈み込んでください！</b><br>・加速度センサーが下方向への動きを自動感知します。<br><small style='color:#ffcc00;'>※スマホの落下や周囲の安全に十分注意してください。</small>";
+    }
+  }
+
+  // iPhone等でのセンサー許可要求
+  async function requestMotionPermission() {
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+      try {
+        const permission = await DeviceMotionEvent.requestPermission();
+        if (permission !== 'granted') {
+          alert('モーションセンサーのアクセスが許可されませんでした。タップモードでプレイしてください。');
+          selectMode('tap');
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }
+
+  // 加速度センサーによる腰落とし検知
+  let lastAccelY = 0;
+  window.addEventListener('devicemotion', (event) => {
+    if (playMode !== 'physical' || state !== 'RUNNING' || isTackled) return;
+
+    const accel = event.accelerationIncludingGravity || event.acceleration;
+    if (!accel) return;
+
+    // Y軸（縦方向）またはZ軸の急激な変化（沈み込み動作）を検出
+    const ay = accel.y || 0;
+    const az = accel.z || 0;
+    
+    // スマホを縦に持って素早く下に落とした時のしきい値判定
+    const deltaY = ay - lastAccelY;
+    lastAccelY = ay;
+
+    // 下方向への加速度スパイク、または強い沈み込みインパクトを検知
+    if (deltaY > 12 || deltaY < -12 || Math.abs(az) > 15) {
+      triggerTackle();
+    }
+  });
+
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
-    triggerTackle();
+    if (playMode === 'tap') triggerTackle();
   });
   window.addEventListener('keydown', (e) => {
     if (e.code === 'Space') {
@@ -263,8 +363,20 @@
     }
   });
 
-  function startGame() {
+  async function startGame() {
+    if (playMode === 'physical') {
+      await requestMotionPermission();
+    }
+
     document.getElementById('start-modal').classList.add('hidden');
+    
+    // UI切り替え
+    document.getElementById('tap-action-zone').classList.toggle('hidden', playMode !== 'tap');
+    document.getElementById('physical-action-zone').classList.toggle('hidden', playMode !== 'physical');
+    document.getElementById('sub-mode-desc').innerText = playMode === 'tap' 
+      ? "相手5mから突進！1.0m〜1.5mでタップ！" 
+      : "相手5mから突進！1.0m〜1.5mで実際に腰を落とせ！";
+
     score = 0;
     currentTry = 0;
     resultHistory = [];
@@ -286,7 +398,6 @@
     currentTry++;
     triesEl.innerText = currentTry;
     
-    // 正確に5.0mからスタート（毎回少しだけスピードに変化をつけて実戦感を出す）
     distance = 5.0;
     relativeSpeed = 0.07 + Math.random() * 0.035; 
     isTackled = false;
@@ -317,7 +428,7 @@
       color = "#ff9900";
       pts = 20;
     } else if (dist < 1.0 && dist >= 0.5) {
-      evalText = "TOO LATE! (体勢が高くなって押し込まれた)";
+      evalText = "TOO LATE! (体勢が高くて押し込まれた)";
       color = "#ff6666";
       pts = 40;
     } else {
@@ -334,7 +445,7 @@
     state = 'RESULT_PAUSE';
     setTimeout(() => {
       nextTry();
-    }, 1400);
+    }, 1500);
   }
 
   function showFeedback(text, color) {
@@ -363,7 +474,7 @@
     if (score >= 400) {
       summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！5mの間合いからでも完璧なタイミングで低く入れてます！</b>";
     } else {
-      summaryHtml += "5mの距離からお互いが近づくスピードをイメージして、1.0m〜1.5mで腰を落とす練習を重ねましょう！";
+      summaryHtml += "1.0m〜1.5mの間合いに相手が入る瞬間に低く入れるよう繰り返し練習しましょう！";
     }
 
     desc.innerHTML = summaryHtml;
@@ -376,7 +487,6 @@
     lastTime = now;
 
     if (state === 'RUNNING') {
-      // 5mから0mに向かってお互いの速度（相対速度）で距離が縮まる
       distance -= relativeSpeed * (dt * 60);
       if (distance <= 0) {
         distance = 0;
@@ -416,9 +526,8 @@
       ctx.stroke();
     }
 
-    // 距離マーカー線 (5mを最大として描画)
+    // 距離マーカー線
     const drawDistanceLine = (distMeter, label, lineColor) => {
-      // 5mを基準にした遠近スケール
       const scale = Math.pow(0.65, distMeter);
       const lineY = horizon + (height - horizon) * scale;
       const lineWidthAtY = width * scale;
@@ -435,7 +544,7 @@
       ctx.fillText(label, vpX + lineWidthAtY + 8, lineY + 4);
     };
 
-    // 理想ゾーンハイライト (1.0m〜1.5m)
+    // 理想ゾーンハイライト
     const y15 = horizon + (height - horizon) * Math.pow(0.65, 1.5);
     const y10 = horizon + (height - horizon) * Math.pow(0.65, 1.0);
     const w15 = width * Math.pow(0.65, 1.5);
@@ -476,7 +585,7 @@
       ctx.fillRect(-runnerSize * 0.2, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
       ctx.fillRect(runnerSize * 0.08, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
 
-      // 胴体 (相手チームの赤ユニフォーム)
+      // 胴体
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
       ctx.roundRect(-runnerSize * 0.3, -runnerSize * 0.9, runnerSize * 0.6, runnerSize * 0.55, 8);
@@ -488,7 +597,7 @@
       ctx.arc(0, -runnerSize * 1.05, runnerSize * 0.18, 0, Math.PI * 2);
       ctx.fill();
 
-      // ボール持ち
+      // ボール
       ctx.fillStyle = '#ea580c';
       ctx.beginPath();
       ctx.ellipse(-runnerSize * 0.15, -runnerSize * 0.7, runnerSize * 0.15, runnerSize * 0.1, Math.PI / 4, 0, Math.PI * 2);
