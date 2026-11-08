@@ -127,15 +127,15 @@
       border-radius: 12px;
     }
 
-    /* フィジカルモード時の案内バッジ */
     .physical-badge {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: bold;
       color: #00ffcc;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       border: 2px solid #00ffcc;
-      padding: 10px 20px;
+      padding: 10px 18px;
       border-radius: 20px;
+      text-align: center;
       animation: pulse-physical 1.5s infinite;
     }
 
@@ -239,9 +239,9 @@
       <div class="btn-label">ここをタップ！</div>
     </div>
 
-    <!-- フィジカルモード用UI -->
+    <!-- フィジカルモード用UI (垂直保持・正対用) -->
     <div class="action-zone hidden" id="physical-action-zone">
-      <div class="physical-badge">スマホを持ったまま実際に沈み込め！</div>
+      <div class="physical-badge">📱 画面を正面に向けたままで<br>グッと腰を落とせ！</div>
     </div>
   </div>
 
@@ -286,7 +286,7 @@
   resize();
 
   let state = 'INIT';
-  let playMode = 'tap'; // 'tap' or 'physical'
+  let playMode = 'tap';
   let score = 0;
   let currentTry = 0;
   const maxTries = 5;
@@ -301,7 +301,6 @@
   const scoreEl = document.getElementById('score');
   const triesEl = document.getElementById('tries');
 
-  // モード選択
   function selectMode(mode) {
     playMode = mode;
     document.getElementById('btn-mode-tap').classList.toggle('active', mode === 'tap');
@@ -311,17 +310,16 @@
     if (mode === 'tap') {
       inst.innerHTML = "・画面下の<b>【腰落】ボタン</b>を1.0m〜1.5mの距離でタップ！<br>・机の上や手軽にタイミング練習をしたい時におすすめです。";
     } else {
-      inst.innerHTML = "・両手でスマホを胸の前に持ち、1.0m〜1.5mの距離で<b>実際にグッと腰を落として素早く沈み込んでください！</b><br>・加速度センサーが下方向への動きを自動感知します。<br><small style='color:#ffcc00;'>※スマホの落下や周囲の安全に十分注意してください。</small>";
+      inst.innerHTML = "・スマホを<b>地面と垂直（自分と正対・画面を正面に向けた状態）</b>に持ちます。<br>・前を向いた正しい姿勢のまま、1.0m〜1.5mのタイミングで<b>実際に身体ごとグッと腰を落としてください！</b><br><small style='color:#ffcc00;'>※スマホの落下や周囲の安全に十分ご注意ください。</small>";
     }
   }
 
-  // iPhone等でのセンサー許可要求
   async function requestMotionPermission() {
     if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
       try {
         const permission = await DeviceMotionEvent.requestPermission();
         if (permission !== 'granted') {
-          alert('モーションセンサーのアクセスが許可されませんでした。タップモードでプレイしてください。');
+          alert('モーションセンサーの許可が必要です。タップモードをご利用ください。');
           selectMode('tap');
         }
       } catch (e) {
@@ -330,24 +328,26 @@
     }
   }
 
-  // 加速度センサーによる腰落とし検知
-  let lastAccelY = 0;
+  // --- 垂直正対ポジション用：重力加速度の上下動（Z軸＋Y軸の傾き変化）を検知 ---
+  let lastVerticalValue = 0;
   window.addEventListener('devicemotion', (event) => {
     if (playMode !== 'physical' || state !== 'RUNNING' || isTackled) return;
 
-    const accel = event.accelerationIncludingGravity || event.acceleration;
+    const accel = event.accelerationIncludingGravity;
     if (!accel) return;
 
-    // Y軸（縦方向）またはZ軸の急激な変化（沈み込み動作）を検出
+    // スマホを垂直（正面）に持った時、上下の沈み込みは重力成分（通常Y軸やZ軸に分散）の急激な変化として現れます。
+    // 正面を向いて真っ直ぐ沈み込んだときの変動（ay と az の組み合わせ）をキャッチします。
     const ay = accel.y || 0;
     const az = accel.z || 0;
     
-    // スマホを縦に持って素早く下に落とした時のしきい値判定
-    const deltaY = ay - lastAccelY;
-    lastAccelY = ay;
+    // 垂直保持状態での沈み込みによる縦方向の重力ベクトル変化
+    const verticalMetric = ay + az;
+    const delta = verticalMetric - lastVerticalValue;
+    lastVerticalValue = verticalMetric;
 
-    // 下方向への加速度スパイク、または強い沈み込みインパクトを検知
-    if (deltaY > 12 || deltaY < -12 || Math.abs(az) > 15) {
+    // 実際にグッと腰を落とした瞬間の急激な上下動のしきい値
+    if (Math.abs(delta) > 9.5) {
       triggerTackle();
     }
   });
@@ -370,12 +370,11 @@
 
     document.getElementById('start-modal').classList.add('hidden');
     
-    // UI切り替え
     document.getElementById('tap-action-zone').classList.toggle('hidden', playMode !== 'tap');
     document.getElementById('physical-action-zone').classList.toggle('hidden', playMode !== 'physical');
     document.getElementById('sub-mode-desc').innerText = playMode === 'tap' 
       ? "相手5mから突進！1.0m〜1.5mでタップ！" 
-      : "相手5mから突進！1.0m〜1.5mで実際に腰を落とせ！";
+      : "相手5mから突進！画面を正面に向けたまま腰を落とせ！";
 
     score = 0;
     currentTry = 0;
@@ -472,9 +471,9 @@
     summaryHtml += "</div><br>";
 
     if (score >= 400) {
-      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！5mの間合いからでも完璧なタイミングで低く入れてます！</b>";
+      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！正しい姿勢のまま完璧なタイミングで入れてます！</b>";
     } else {
-      summaryHtml += "1.0m〜1.5mの間合いに相手が入る瞬間に低く入れるよう繰り返し練習しましょう！";
+      summaryHtml += "前を向いた正しい姿勢をキープし、1.0m〜1.5mのタイミングで沈み込む練習を続けましょう！";
     }
 
     desc.innerHTML = summaryHtml;
@@ -500,7 +499,6 @@
 
     const horizon = height * 0.38;
     
-    // 空とグラウンド
     const skyGradient = ctx.createLinearGradient(0, 0, 0, horizon);
     skyGradient.addColorStop(0, '#0f172a');
     skyGradient.addColorStop(1, '#1e3a8a');
@@ -513,7 +511,6 @@
     ctx.fillStyle = grassGradient;
     ctx.fillRect(0, horizon, width, height - horizon);
 
-    // 遠近グリッド
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 2;
     const vpX = width / 2;
@@ -526,7 +523,6 @@
       ctx.stroke();
     }
 
-    // 距離マーカー線
     const drawDistanceLine = (distMeter, label, lineColor) => {
       const scale = Math.pow(0.65, distMeter);
       const lineY = horizon + (height - horizon) * scale;
@@ -544,7 +540,6 @@
       ctx.fillText(label, vpX + lineWidthAtY + 8, lineY + 4);
     };
 
-    // 理想ゾーンハイライト
     const y15 = horizon + (height - horizon) * Math.pow(0.65, 1.5);
     const y10 = horizon + (height - horizon) * Math.pow(0.65, 1.0);
     const w15 = width * Math.pow(0.65, 1.5);
@@ -565,7 +560,6 @@
     drawDistanceLine(1.0, "1.0m [理想下限]", "#00ffcc");
     drawDistanceLine(0.5, "0.5m", "rgba(255,0,0,0.6)");
 
-    // 相手プレイヤーの描画
     if (state === 'RUNNING' || state === 'RESULT_PAUSE') {
       const scale = Math.pow(0.65, distance);
       const runnerY = horizon + (height - horizon) * scale;
@@ -574,30 +568,25 @@
       ctx.save();
       ctx.translate(vpX, runnerY);
 
-      // 影
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.beginPath();
       ctx.ellipse(0, 0, runnerSize * 0.5, runnerSize * 0.15, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 足
       ctx.fillStyle = '#111';
       ctx.fillRect(-runnerSize * 0.2, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
       ctx.fillRect(runnerSize * 0.08, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
 
-      // 胴体
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
       ctx.roundRect(-runnerSize * 0.3, -runnerSize * 0.9, runnerSize * 0.6, runnerSize * 0.55, 8);
       ctx.fill();
 
-      // 頭
       ctx.fillStyle = '#fca5a5';
       ctx.beginPath();
       ctx.arc(0, -runnerSize * 1.05, runnerSize * 0.18, 0, Math.PI * 2);
       ctx.fill();
 
-      // ボール
       ctx.fillStyle = '#ea580c';
       ctx.beginPath();
       ctx.ellipse(-runnerSize * 0.15, -runnerSize * 0.7, runnerSize * 0.15, runnerSize * 0.1, Math.PI / 4, 0, Math.PI * 2);
@@ -605,7 +594,6 @@
 
       ctx.restore();
 
-      // 距離HUD
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 22px monospace';
       ctx.textAlign = 'center';
