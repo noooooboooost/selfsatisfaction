@@ -22,6 +22,7 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
+      touch-action: manipulation;
     }
     #game-container {
       position: relative;
@@ -33,6 +34,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      cursor: pointer;
     }
     canvas {
       width: 100%;
@@ -78,76 +80,18 @@
       font-weight: bold;
     }
     
-    .action-zone {
-      position: absolute;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      pointer-events: auto;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .tap-btn {
-      width: 115px;
-      height: 115px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #ff4d4d 0%, #cc0000 70%, #800000 100%);
-      border: 5px solid #ffffff;
-      box-shadow: 0 0 25px rgba(255, 77, 77, 0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      animation: pulse 1.2s infinite;
-      touch-action: manipulation;
-    }
-    .tap-btn:active {
-      transform: scale(0.92);
-    }
-    .tap-inner-circle {
-      width: 55px;
-      height: 55px;
-      border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.9);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: bold;
-      font-size: 18px;
-      color: #fff;
-    }
-    .btn-label {
-      font-size: 13px;
-      font-weight: bold;
-      color: #fff;
-      margin-top: 6px;
-      background: rgba(0,0,0,0.7);
-      padding: 4px 12px;
-      border-radius: 12px;
-    }
-
-    .physical-badge {
-      font-size: 13px;
-      font-weight: bold;
-      color: #00ffcc;
-      background: rgba(0,0,0,0.85);
-      border: 2px solid #00ffcc;
-      padding: 10px 18px;
+    /* 画面下部の操作案内ラベル（被らないよう最下部に配置） */
+    .hud-bottom {
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 10px 16px;
       border-radius: 20px;
       text-align: center;
-      animation: pulse-physical 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
-      70% { box-shadow: 0 0 0 20px rgba(255, 77, 77, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
-    }
-    @keyframes pulse-physical {
-      0% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
-      70% { box-shadow: 0 0 0 15px rgba(0, 255, 204, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
+      font-size: 14px;
+      font-weight: bold;
+      color: #00ffcc;
+      margin-bottom: 12px;
+      backdrop-filter: blur(4px);
     }
 
     .modal {
@@ -164,28 +108,8 @@
       z-index: 10;
     }
     .modal-title { font-size: 22px; font-weight: bold; color: #ffd700; margin-bottom: 12px; }
-    .modal-desc { font-size: 13px; color: #ddd; line-height: 1.6; margin-bottom: 16px; text-align: left; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;}
+    .modal-desc { font-size: 13px; color: #ddd; line-height: 1.6; margin-bottom: 20px; text-align: left; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;}
     
-    .mode-select {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .mode-btn {
-      background: #333;
-      border: 2px solid #555;
-      color: #fff;
-      padding: 10px 16px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 13px;
-    }
-    .mode-btn.active {
-      background: #ff4d4d;
-      border-color: #fff;
-    }
-
     .start-btn {
       background: #28a745;
       color: white;
@@ -224,24 +148,15 @@
   <div class="ui-layer">
     <div class="hud-top">
       <div class="title">ミニラグビー：5mペナルティタックル練習</div>
-      <div class="subtitle" id="sub-mode-desc">相手5mから突進！1.0m〜1.5mで操作！</div>
+      <div class="subtitle">相手5mから突進！1.0m〜1.5mで画面タップ！</div>
       <div class="stats">
         <div>スコア: <span id="score">0</span></div>
         <div>回数: <span id="tries">0</span>/5</div>
       </div>
     </div>
 
-    <!-- タップモード用UI -->
-    <div class="action-zone" id="tap-action-zone">
-      <div class="tap-btn" id="tackle-btn">
-        <div class="tap-inner-circle">腰落</div>
-      </div>
-      <div class="btn-label">ここをタップ！</div>
-    </div>
-
-    <!-- フィジカルモード用UI (垂直保持・正対用) -->
-    <div class="action-zone hidden" id="physical-action-zone">
-      <div class="physical-badge">📱 画面を正面に向けたままで<br>グッと腰を落とせ！</div>
+    <div class="hud-bottom">
+      👆 画面のどこでもタップして腰を落とせ！
     </div>
   </div>
 
@@ -250,18 +165,11 @@
   <!-- Start Modal -->
   <div id="start-modal" class="modal">
     <div class="modal-title">ミニラグビー 5mペナルティ対策</div>
-    
-    <div style="font-size: 13px; color: #aaa; margin-bottom: 8px;">操作モードを選択：</div>
-    <div class="mode-select">
-      <button class="mode-btn active" id="btn-mode-tap" onclick="selectMode('tap')">👆 タップモード</button>
-      <button class="mode-btn" id="btn-mode-physical" onclick="selectMode('physical')">🏃‍♂️ フィジカルモード</button>
+    <div class="modal-desc">
+      ・相手は5m後ろからタップ＆突進。<br>
+      ・味方FWも前に出てゲインラインを潰しにいきます。<br>
+      ・間合いが<b>「1.5m〜1.0m」</b>になった瞬間に<b>画面のどこでもタップ</b>（PCはSpaceキー）して腰を落としましょう！
     </div>
-
-    <div class="modal-desc" id="mode-instruction">
-      ・画面下の<b>【腰落】ボタン</b>を1.0m〜1.5mの距離でタップ！<br>
-      ・机の上や手軽にタイミング練習をしたい時におすすめです。
-    </div>
-
     <button class="start-btn" onclick="startGame()">練習スタート！</button>
   </div>
 
@@ -276,6 +184,7 @@
 <script>
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
+  const container = document.getElementById('game-container');
   
   let width, height;
   function resize() {
@@ -286,7 +195,6 @@
   resize();
 
   let state = 'INIT';
-  let playMode = 'tap';
   let score = 0;
   let currentTry = 0;
   const maxTries = 5;
@@ -296,86 +204,28 @@
   let isTackled = false;
   let resultHistory = [];
 
-  const btn = document.getElementById('tackle-btn');
   const feedback = document.getElementById('feedback');
   const scoreEl = document.getElementById('score');
   const triesEl = document.getElementById('tries');
 
-  function selectMode(mode) {
-    playMode = mode;
-    document.getElementById('btn-mode-tap').classList.toggle('active', mode === 'tap');
-    document.getElementById('btn-mode-physical').classList.toggle('active', mode === 'physical');
-    
-    const inst = document.getElementById('mode-instruction');
-    if (mode === 'tap') {
-      inst.innerHTML = "・画面下の<b>【腰落】ボタン</b>を1.0m〜1.5mの距離でタップ！<br>・机の上や手軽にタイミング練習をしたい時におすすめです。";
-    } else {
-      inst.innerHTML = "・スマホを<b>地面と垂直（自分と正対・画面を正面に向けた状態）</b>に持ちます。<br>・前を向いた正しい姿勢のまま、1.0m〜1.5mのタイミングで<b>実際に身体ごとグッと腰を落としてください！</b><br><small style='color:#ffcc00;'>※スマホの落下や周囲の安全に十分ご注意ください。</small>";
-    }
-  }
-
-  async function requestMotionPermission() {
-    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-      try {
-        const permission = await DeviceMotionEvent.requestPermission();
-        if (permission !== 'granted') {
-          alert('モーションセンサーの許可が必要です。タップモードをご利用ください。');
-          selectMode('tap');
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  }
-
-  // --- 垂直正対ポジション用：重力加速度の上下動（Z軸＋Y軸の傾き変化）を検知 ---
-  let lastVerticalValue = 0;
-  window.addEventListener('devicemotion', (event) => {
-    if (playMode !== 'physical' || state !== 'RUNNING' || isTackled) return;
-
-    const accel = event.accelerationIncludingGravity;
-    if (!accel) return;
-
-    // スマホを垂直（正面）に持った時、上下の沈み込みは重力成分（通常Y軸やZ軸に分散）の急激な変化として現れます。
-    // 正面を向いて真っ直ぐ沈み込んだときの変動（ay と az の組み合わせ）をキャッチします。
-    const ay = accel.y || 0;
-    const az = accel.z || 0;
-    
-    // 垂直保持状態での沈み込みによる縦方向の重力ベクトル変化
-    const verticalMetric = ay + az;
-    const delta = verticalMetric - lastVerticalValue;
-    lastVerticalValue = verticalMetric;
-
-    // 実際にグッと腰を落とした瞬間の急激な上下動のしきい値
-    if (Math.abs(delta) > 9.5) {
-      triggerTackle();
-    }
-  });
-
-  btn.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    if (playMode === 'tap') triggerTackle();
-  });
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
+  // 画面全体どこでもタップ・クリックでアクション発動
+  container.addEventListener('pointerdown', (e) => {
+    // モーダル表示中は無視
+    if (state === 'RUNNING') {
       e.preventDefault();
       triggerTackle();
     }
   });
 
-  async function startGame() {
-    if (playMode === 'physical') {
-      await requestMotionPermission();
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && state === 'RUNNING') {
+      e.preventDefault();
+      triggerTackle();
     }
+  });
 
+  function startGame() {
     document.getElementById('start-modal').classList.add('hidden');
-    
-    document.getElementById('tap-action-zone').classList.toggle('hidden', playMode !== 'tap');
-    document.getElementById('physical-action-zone').classList.toggle('hidden', playMode !== 'physical');
-    document.getElementById('sub-mode-desc').innerText = playMode === 'tap' 
-      ? "相手5mから突進！1.0m〜1.5mでタップ！" 
-      : "相手5mから突進！画面を正面に向けたまま腰を落とせ！";
-
     score = 0;
     currentTry = 0;
     resultHistory = [];
@@ -471,9 +321,9 @@
     summaryHtml += "</div><br>";
 
     if (score >= 400) {
-      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！正しい姿勢のまま完璧なタイミングで入れてます！</b>";
+      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！5mの間合いからでも完璧なタイミングで低く入れてます！</b>";
     } else {
-      summaryHtml += "前を向いた正しい姿勢をキープし、1.0m〜1.5mのタイミングで沈み込む練習を続けましょう！";
+      summaryHtml += "1.0m〜1.5mの間合いに相手が入る瞬間に低く入れるよう繰り返し練習しましょう！";
     }
 
     desc.innerHTML = summaryHtml;
@@ -499,6 +349,7 @@
 
     const horizon = height * 0.38;
     
+    // 空とグラウンド
     const skyGradient = ctx.createLinearGradient(0, 0, 0, horizon);
     skyGradient.addColorStop(0, '#0f172a');
     skyGradient.addColorStop(1, '#1e3a8a');
@@ -511,6 +362,7 @@
     ctx.fillStyle = grassGradient;
     ctx.fillRect(0, horizon, width, height - horizon);
 
+    // 遠近グリッド
     ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 2;
     const vpX = width / 2;
@@ -523,6 +375,7 @@
       ctx.stroke();
     }
 
+    // 距離マーカー線
     const drawDistanceLine = (distMeter, label, lineColor) => {
       const scale = Math.pow(0.65, distMeter);
       const lineY = horizon + (height - horizon) * scale;
@@ -540,6 +393,7 @@
       ctx.fillText(label, vpX + lineWidthAtY + 8, lineY + 4);
     };
 
+    // 理想ゾーンハイライト
     const y15 = horizon + (height - horizon) * Math.pow(0.65, 1.5);
     const y10 = horizon + (height - horizon) * Math.pow(0.65, 1.0);
     const w15 = width * Math.pow(0.65, 1.5);
@@ -560,6 +414,7 @@
     drawDistanceLine(1.0, "1.0m [理想下限]", "#00ffcc");
     drawDistanceLine(0.5, "0.5m", "rgba(255,0,0,0.6)");
 
+    // 相手プレイヤーの描画
     if (state === 'RUNNING' || state === 'RESULT_PAUSE') {
       const scale = Math.pow(0.65, distance);
       const runnerY = horizon + (height - horizon) * scale;
@@ -568,25 +423,30 @@
       ctx.save();
       ctx.translate(vpX, runnerY);
 
+      // 影
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.beginPath();
       ctx.ellipse(0, 0, runnerSize * 0.5, runnerSize * 0.15, 0, 0, Math.PI * 2);
       ctx.fill();
 
+      // 足
       ctx.fillStyle = '#111';
       ctx.fillRect(-runnerSize * 0.2, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
       ctx.fillRect(runnerSize * 0.08, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
 
+      // 胴体
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
       ctx.roundRect(-runnerSize * 0.3, -runnerSize * 0.9, runnerSize * 0.6, runnerSize * 0.55, 8);
       ctx.fill();
 
+      // 頭
       ctx.fillStyle = '#fca5a5';
       ctx.beginPath();
       ctx.arc(0, -runnerSize * 1.05, runnerSize * 0.18, 0, Math.PI * 2);
       ctx.fill();
 
+      // ボール
       ctx.fillStyle = '#ea580c';
       ctx.beginPath();
       ctx.ellipse(-runnerSize * 0.15, -runnerSize * 0.7, runnerSize * 0.15, runnerSize * 0.1, Math.PI / 4, 0, Math.PI * 2);
@@ -594,10 +454,14 @@
 
       ctx.restore();
 
+      // 【レイアウト修正】残距離（メートル表示）を相手選手と被らない画面下側にすっきり配置
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px monospace';
+      ctx.font = 'bold 24px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`相手との距離: ${distance.toFixed(2)} m`, vpX, height - 165);
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(`残距離: ${distance.toFixed(2)} m`, vpX, height - 80);
+      ctx.shadowBlur = 0;
     }
   }
 
