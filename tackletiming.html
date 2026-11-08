@@ -40,7 +40,6 @@
       display: block;
     }
     
-    /* UI Overlay */
     .ui-layer {
       position: absolute;
       top: 0;
@@ -54,7 +53,7 @@
       padding: 16px;
     }
     .hud-top {
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.7);
       padding: 12px;
       border-radius: 12px;
       backdrop-filter: blur(4px);
@@ -79,10 +78,9 @@
       font-weight: bold;
     }
     
-    /* 巨大タップボタン（画面下の丸印） */
     .action-zone {
       position: absolute;
-      bottom: 40px;
+      bottom: 30px;
       left: 50%;
       transform: translateX(-50%);
       pointer-events: auto;
@@ -96,54 +94,49 @@
       border-radius: 50%;
       background: radial-gradient(circle, #ff4d4d 0%, #cc0000 70%, #800000 100%);
       border: 5px solid #ffffff;
-      box-shadow: 0 0 25px rgba(255, 77, 77, 0.8), inset 0 0 15px rgba(255,255,255,0.5);
+      box-shadow: 0 0 25px rgba(255, 77, 77, 0.8);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      animation: pulse 1.5s infinite;
-      transition: transform 0.1s;
+      animation: pulse 1.2s infinite;
+      touch-action: manipulation;
     }
     .tap-btn:active {
       transform: scale(0.92);
-      background: radial-gradient(circle, #ff1a1a 0%, #990000 100%);
     }
     .tap-inner-circle {
-      width: 50px;
-      height: 50px;
+      width: 55px;
+      height: 55px;
       border-radius: 50%;
-      border: 3px solid rgba(255, 255, 255, 0.8);
+      border: 3px solid rgba(255, 255, 255, 0.9);
       display: flex;
       align-items: center;
       justify-content: center;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 18px;
       color: #fff;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
     }
     .btn-label {
       font-size: 13px;
       font-weight: bold;
       color: #fff;
-      margin-top: 8px;
+      margin-top: 6px;
       background: rgba(0,0,0,0.7);
       padding: 4px 12px;
       border-radius: 12px;
-      letter-spacing: 1px;
-    }
-    
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7), inset 0 0 15px rgba(255,255,255,0.5); }
-      70% { box-shadow: 0 0 0 20px rgba(255, 77, 77, 0), inset 0 0 15px rgba(255,255,255,0.5); }
-      100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0), inset 0 0 15px rgba(255,255,255,0.5); }
     }
 
-    /* Modal / Result Layer */
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(255, 77, 77, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+    }
+
     .modal {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85);
+      background: rgba(0,0,0,0.88);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -153,8 +146,28 @@
       pointer-events: auto;
       z-index: 10;
     }
-    .modal-title { font-size: 26px; font-weight: bold; color: #ffd700; margin-bottom: 12px; }
+    .modal-title { font-size: 24px; font-weight: bold; color: #ffd700; margin-bottom: 12px; }
     .modal-desc { font-size: 14px; color: #ddd; line-height: 1.6; margin-bottom: 20px; }
+    
+    .speed-select {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .speed-btn {
+      background: #333;
+      border: 2px solid #555;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .speed-btn.active {
+      background: #ff4d4d;
+      border-color: #fff;
+    }
+
     .start-btn {
       background: #28a745;
       color: white;
@@ -164,26 +177,23 @@
       font-weight: bold;
       border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(40,167,69,0.4);
     }
-    .start-btn:active { transform: scale(0.96); }
     
-    /* Dynamic Feedback Display */
     .feedback-pop {
       position: absolute;
-      top: 40%;
+      top: 35%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 900;
-      text-shadow: 0 0 10px #000, 2px 2px 0 #000;
+      text-shadow: 0 0 10px #000;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.2s, transform 0.2s;
+      transition: opacity 0.15s, transform 0.15s;
     }
     .show-pop {
       opacity: 1;
-      transform: translate(-50%, -60%) scale(1.2);
+      transform: translate(-50%, -55%) scale(1.1);
     }
     .hidden { display: none !important; }
   </style>
@@ -195,16 +205,15 @@
 
   <div class="ui-layer">
     <div class="hud-top">
-      <div class="title">正面視点：腰落としタイミング練習</div>
+      <div class="title">正面視点：タックルタイミング練習</div>
       <div class="subtitle">相手が突っ込んでくる！1.0m〜1.5mでタップ！</div>
       <div class="stats">
         <div>スコア: <span id="score">0</span></div>
-        <div>トライ: <span id="tries">0</span>/5</div>
+        <div>回数: <span id="tries">0</span>/5</div>
       </div>
     </div>
 
-    <!-- ここに明確な丸印ボタンを配置 -->
-    <div class="action-zone" id="action-zone">
+    <div class="action-zone">
       <div class="tap-btn" id="tackle-btn">
         <div class="tap-inner-circle">腰落</div>
       </div>
@@ -219,10 +228,17 @@
     <div class="modal-title">相手突進タックル練習</div>
     <div class="modal-desc">
       正面から相手が突っ込んで来ます。<br>
-      距離が<b>「1.5m〜1.0m」</b>になった瞬間に<br>
-      画面下の<b>【赤い丸ボタン】</b>を押して腰を落としましょう！<br><br>
-      ※キーボードの <b>[SPACEキー]</b> でも操作可能です。
+      相手との距離が<b>「1.5m〜1.0m」</b>になった瞬間に<br>
+      画面下の<b>【赤い丸ボタン】</b>を押して腰を落としましょう！
     </div>
+
+    <div style="font-size: 13px; color: #aaa; margin-bottom: 8px;">突進スピードの選択：</div>
+    <div class="speed-select">
+      <button class="speed-btn" onclick="setSpeed(0.12, this)">ふつう</button>
+      <button class="speed-btn active" onclick="setSpeed(0.20, this)">はやい</button>
+      <button class="speed-btn" onclick="setSpeed(0.32, this)">実戦（高速）</button>
+    </div>
+
     <button class="start-btn" onclick="startGame()">スタート！</button>
   </div>
 
@@ -246,15 +262,14 @@
   window.addEventListener('resize', resize);
   resize();
 
-  // Game States
-  let state = 'INIT'; // INIT, RUNNING, RESULT_PAUSE, END
+  let state = 'INIT';
   let score = 0;
   let currentTry = 0;
   const maxTries = 5;
-  let runnerDistance = 15; // メートル (15m手前からスタート)
-  let runnerSpeed = 0.08; // 速度
+  let runnerDistance = 10; // スタート距離を10mに縮めてテンポアップ
+  let baseSpeed = 0.20; // デフォルトスピードを高速化
+  let currentSpeed = 0.20;
   let isTackled = false;
-  let tackleDistance = 0;
   let resultHistory = [];
 
   const btn = document.getElementById('tackle-btn');
@@ -262,7 +277,13 @@
   const scoreEl = document.getElementById('score');
   const triesEl = document.getElementById('tries');
 
-  // タップ＆キー入力の受信
+  function setSpeed(spd, element) {
+    baseSpeed = spd;
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    element.classList.add('active');
+  }
+
+  // タップ感度向上（pointerdown）
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     triggerTackle();
@@ -286,7 +307,7 @@
 
   function restartGame() {
     document.getElementById('result-modal').classList.add('hidden');
-    startGame();
+    document.getElementById('start-modal').classList.remove('hidden');
   }
 
   function nextTry() {
@@ -296,8 +317,8 @@
     }
     currentTry++;
     triesEl.innerText = currentTry;
-    runnerDistance = 12 + Math.random() * 3; // 12m~15m
-    runnerSpeed = 0.07 + Math.random() * 0.04; // 速度のランダム性
+    runnerDistance = 8 + Math.random() * 2; // 8〜10mから突進開始
+    currentSpeed = baseSpeed * (0.9 + Math.random() * 0.2);
     isTackled = false;
     state = 'RUNNING';
   }
@@ -305,8 +326,7 @@
   function triggerTackle() {
     if (state !== 'RUNNING' || isTackled) return;
     isTackled = true;
-    tackleDistance = runnerDistance;
-    evaluateTackle(tackleDistance);
+    evaluateTackle(runnerDistance);
   }
 
   function evaluateTackle(dist) {
@@ -331,7 +351,7 @@
       color = "#ff6666";
       pts = 40;
     } else {
-      evalText = "CRASH! (遅すぎて吹き飛ばされた)";
+      evalText = "CRASH! (遅すぎて衝突)";
       color = "#ff0000";
       pts = 0;
     }
@@ -344,7 +364,7 @@
     state = 'RESULT_PAUSE';
     setTimeout(() => {
       nextTry();
-    }, 1800);
+    }, 1200); // テンポよく次へ
   }
 
   function showFeedback(text, color) {
@@ -353,7 +373,7 @@
     feedback.classList.add('show-pop');
     setTimeout(() => {
       feedback.classList.remove('show-pop');
-    }, 1500);
+    }, 1000);
   }
 
   function endGame() {
@@ -371,22 +391,26 @@
     summaryHtml += "</div><br>";
 
     if (score >= 400) {
-      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！理想の1.0m〜1.5mの間合いをマスターしています！</b>";
+      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！1.0m〜1.5mの間合いが見えています！</b>";
     } else {
-      summaryHtml += "1.0m〜1.5mに相手が近づいた瞬間に赤い丸ボタンを押せるよう繰り返し練習しましょう！";
+      summaryHtml += "1.0m〜1.5mに相手が入る瞬間にボタンを押せるよう練習しましょう！";
     }
 
     desc.innerHTML = summaryHtml;
     resModal.classList.remove('hidden');
   }
 
-  // --- メイン描画ループ (3D風正面パース) ---
-  function update() {
+  let lastTime = performance.now();
+  function update(now) {
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+
     if (state === 'RUNNING') {
-      runnerDistance -= runnerSpeed;
+      // フレームレート依存を回避し、一貫したスピードで接近
+      runnerDistance -= currentSpeed * (dt * 60);
       if (runnerDistance <= 0) {
         runnerDistance = 0;
-        triggerTackle(); // 手前まで来て押さなかった場合
+        triggerTackle();
       }
     }
   }
@@ -394,63 +418,60 @@
   function draw() {
     ctx.clearRect(0, 0, width, height);
 
-    // 1. 背景（空とグランド）
-    const horizon = height * 0.4;
+    const horizon = height * 0.38;
     
     // 空
     const skyGradient = ctx.createLinearGradient(0, 0, 0, horizon);
-    skyGradient.addColorStop(0, '#0a192f');
+    skyGradient.addColorStop(0, '#0f172a');
     skyGradient.addColorStop(1, '#1e3a8a');
     ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, width, horizon);
 
     // 芝生
     const grassGradient = ctx.createLinearGradient(0, horizon, 0, height);
-    grassGradient.addColorStop(0, '#15803d');
+    grassGradient.addColorStop(0, '#166534');
     grassGradient.addColorStop(1, '#052e16');
     ctx.fillStyle = grassGradient;
     ctx.fillRect(0, horizon, width, height - horizon);
 
-    // パースペクティブ線（遠近感のフィールドライン）
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    // グリッド線
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 2;
-    const vpX = width / 2; // 消失点
+    const vpX = width / 2;
     const vpY = horizon;
 
     for (let i = -3; i <= 3; i++) {
       ctx.beginPath();
       ctx.moveTo(vpX, vpY);
-      ctx.lineTo(vpX + i * (width * 0.35), height);
+      ctx.lineTo(vpX + i * (width * 0.4), height);
       ctx.stroke();
     }
 
-    // 距離マーカー線 (2.0m, 1.5m, 1.0m, 0.5m)
+    // 距離マーカー線
     const drawDistanceLine = (distMeter, label, lineColor) => {
-      // 距離を0~20mのスケールでY座標に変換 (指数関数的に手前を広く)
-      const scale = Math.pow(0.78, distMeter);
+      const scale = Math.pow(0.75, distMeter);
       const lineY = horizon + (height - horizon) * scale;
       const lineWidthAtY = width * scale;
 
       ctx.strokeStyle = lineColor;
-      ctx.lineWidth = distMeter === 1.5 || distMeter === 1.0 ? 4 : 2;
+      ctx.lineWidth = (distMeter === 1.5 || distMeter === 1.0) ? 4 : 2;
       ctx.beginPath();
       ctx.moveTo(vpX - lineWidthAtY, lineY);
       ctx.lineTo(vpX + lineWidthAtY, lineY);
       ctx.stroke();
 
-      // ラベル
       ctx.fillStyle = lineColor;
       ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(label, vpX + lineWidthAtY + 10, lineY + 4);
+      ctx.fillText(label, vpX + lineWidthAtY + 8, lineY + 4);
     };
 
-    // ゾーン描画（1.0m〜1.5mをハイライト）
-    const y15 = horizon + (height - horizon) * Math.pow(0.78, 1.5);
-    const y10 = horizon + (height - horizon) * Math.pow(0.78, 1.0);
-    const w15 = width * Math.pow(0.78, 1.5);
-    const w10 = width * Math.pow(0.78, 1.0);
+    // 理想ゾーンハイライト
+    const y15 = horizon + (height - horizon) * Math.pow(0.75, 1.5);
+    const y10 = horizon + (height - horizon) * Math.pow(0.75, 1.0);
+    const w15 = width * Math.pow(0.75, 1.5);
+    const w10 = width * Math.pow(0.75, 1.0);
 
-    ctx.fillStyle = 'rgba(0, 255, 204, 0.2)';
+    ctx.fillStyle = 'rgba(0, 255, 204, 0.25)';
     ctx.beginPath();
     ctx.moveTo(vpX - w15, y15);
     ctx.lineTo(vpX + w15, y15);
@@ -461,15 +482,15 @@
 
     drawDistanceLine(3.0, "3.0m", "rgba(255,255,255,0.3)");
     drawDistanceLine(2.0, "2.0m", "rgba(255,255,255,0.5)");
-    drawDistanceLine(1.5, "1.5m 【理想上限】", "#00ffcc");
-    drawDistanceLine(1.0, "1.0m 【理想下限】", "#00ffcc");
+    drawDistanceLine(1.5, "1.5m [OK]", "#00ffcc");
+    drawDistanceLine(1.0, "1.0m [OK]", "#00ffcc");
     drawDistanceLine(0.5, "0.5m", "rgba(255,0,0,0.6)");
 
-    // 2. 突っ込んでくる相手プレイヤーの描画
+    // 相手プレイヤーの描画
     if (state === 'RUNNING' || state === 'RESULT_PAUSE') {
-      const scale = Math.pow(0.78, runnerDistance);
+      const scale = Math.pow(0.75, runnerDistance);
       const runnerY = horizon + (height - horizon) * scale;
-      const runnerSize = 140 * scale; // 手前に来るほど大きく
+      const runnerSize = 150 * scale;
 
       ctx.save();
       ctx.translate(vpX, runnerY);
@@ -480,7 +501,6 @@
       ctx.ellipse(0, 0, runnerSize * 0.5, runnerSize * 0.15, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // 体（赤ユニフォームの選手）
       // 足
       ctx.fillStyle = '#111';
       ctx.fillRect(-runnerSize * 0.2, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
@@ -498,29 +518,29 @@
       ctx.arc(0, -runnerSize * 1.05, runnerSize * 0.18, 0, Math.PI * 2);
       ctx.fill();
 
-      // ラグビーボール
-      ctx.fillStyle = '#f97316';
+      // ボール
+      ctx.fillStyle = '#ea580c';
       ctx.beginPath();
       ctx.ellipse(-runnerSize * 0.15, -runnerSize * 0.7, runnerSize * 0.15, runnerSize * 0.1, Math.PI / 4, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.restore();
 
-      // リアルタイム距離HUD表示
+      // 距離表示
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px monospace';
+      ctx.font = 'bold 22px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText(`距離: ${runnerDistance.toFixed(2)} m`, vpX, height - 160);
+      ctx.fillText(`残距離: ${runnerDistance.toFixed(2)} m`, vpX, height - 165);
     }
   }
 
-  function loop() {
-    update();
+  function loop(now) {
+    update(now);
     draw();
     requestAnimationFrame(loop);
   }
 
-  loop();
+  requestAnimationFrame(loop);
 </script>
 
 </body>
