@@ -10,14 +10,14 @@
         canvas { touch-action: none; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 h-screen max-h-screen overflow-hidden flex flex-col justify-between items-center p-1 sm:p-2 select-none">
+<body class="bg-slate-950 text-slate-100 h-screen max-h-screen overflow-hidden flex flex-col justify-between items-center p-2 select-none">
 
-    <!-- ヘッダー (コンパクト化) -->
+    <!-- ヘッダー -->
     <header class="w-full max-w-sm flex items-center justify-between px-2 py-1 shrink-0">
         <h1 class="text-base font-extrabold text-cyan-400 tracking-wider flex items-center gap-1">
-            🏓 <span class="bg-gradient-to-r from-cyan-400 to-indigo-500 bg-clip-text text-transparent">BREAKOUT</span>
+            ⚡ <span class="bg-gradient-to-r from-cyan-400 to-indigo-500 bg-clip-text text-transparent">BREAKOUT NEON</span>
         </h1>
-        <div class="flex gap-3 text-xs font-bold bg-slate-900/80 px-2.5 py-1 rounded-full border border-slate-800">
+        <div class="flex gap-2 text-xs font-bold bg-slate-900/90 px-3 py-1 rounded-full border border-slate-800">
             <div>SCORE: <span id="score" class="text-amber-400">0</span></div>
             <div>LIVES: <span id="lives" class="text-rose-400">❤️❤️❤️</span></div>
         </div>
@@ -25,28 +25,28 @@
 
     <!-- メインゲームエリア -->
     <main class="relative w-full max-w-sm flex-1 flex items-center justify-center my-auto min-h-0">
-        <canvas id="gameCanvas" width="400" height="460" class="w-full max-h-full object-contain bg-slate-900/90 rounded-xl border border-slate-800 shadow-lg shadow-cyan-950/20"></canvas>
+        <canvas id="gameCanvas" width="380" height="420" class="w-full max-h-full object-contain bg-slate-900/90 rounded-xl border border-slate-800 shadow-lg shadow-cyan-950/25"></canvas>
 
         <!-- ゲームオーバー / クリア モーダル -->
         <div id="modal" class="hidden absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center rounded-xl p-4 text-center z-10 backdrop-blur-sm">
             <h2 id="modal-title" class="text-2xl font-black text-rose-500 mb-1">GAME OVER</h2>
             <p id="modal-desc" class="text-xs text-slate-400 mb-4">スコア: <span id="final-score" class="text-amber-400 font-bold">0</span></p>
-            <button id="restart-btn" onclick="initGame()" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition text-white font-bold px-6 py-2 rounded-full text-sm shadow-lg shadow-indigo-600/30">
+            <button onclick="initGame()" class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition text-white font-bold px-6 py-2.5 rounded-full text-sm shadow-lg shadow-indigo-600/30">
                 もう一度遊ぶ
             </button>
         </div>
     </main>
 
-    <!-- タッチコントロール & コントローラー (コンパクト配置) -->
-    <footer class="w-full max-w-sm shrink-0 pb-1">
+    <!-- 固定コントローラーエリア -->
+    <footer class="w-full max-w-sm shrink-0 pb-2">
         <div class="grid grid-cols-3 gap-2 px-1">
-            <button id="btn-left" class="bg-slate-800/90 active:bg-cyan-600/40 text-cyan-400 border border-slate-700/80 py-2.5 rounded-xl font-black text-sm flex items-center justify-center gap-1 active:scale-95 transition">
+            <button id="btn-left" class="bg-slate-800 active:bg-cyan-600/50 text-cyan-400 border border-slate-700 py-3.5 rounded-xl font-black text-base flex items-center justify-center shadow-md active:scale-95 transition">
                 ◀ LEFT
             </button>
-            <button id="btn-action" class="bg-amber-600/80 active:bg-amber-500 text-white border border-amber-500/80 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center shadow-md active:scale-95 transition">
+            <button id="btn-action" class="bg-amber-600 active:bg-amber-500 text-white border border-amber-500 py-3.5 rounded-xl font-bold text-xs flex items-center justify-center shadow-md active:scale-95 transition">
                 🚀 LAUNCH
             </button>
-            <button id="btn-right" class="bg-slate-800/90 active:bg-cyan-600/40 text-cyan-400 border border-slate-700/80 py-2.5 rounded-xl font-black text-sm flex items-center justify-center gap-1 active:scale-95 transition">
+            <button id="btn-right" class="bg-slate-800 active:bg-cyan-600/50 text-cyan-400 border border-slate-700 py-3.5 rounded-xl font-black text-base flex items-center justify-center shadow-md active:scale-95 transition">
                 RIGHT ▶
             </button>
         </div>
@@ -56,27 +56,23 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
 
-        // ゲーム基本パラメータ
-        const CANVAS_WIDTH = 400;
-        const CANVAS_HEIGHT = 460;
+        const CANVAS_WIDTH = 380;
+        const CANVAS_HEIGHT = 420;
 
         let score = 0;
         let lives = 3;
         let gameState = 'START'; // 'START', 'PLAYING', 'GAMEOVER', 'CLEAR'
 
-        // パドル
         const paddle = {
             width: 75,
             height: 10,
             x: (CANVAS_WIDTH - 75) / 2,
             y: CANVAS_HEIGHT - 25,
             speed: 7,
-            dx: 0,
             laserPower: false,
             laserTimer: 0
         };
 
-        // ボール管理
         let balls = [];
 
         function createBall(x, y, isStuck = false) {
@@ -84,24 +80,21 @@
                 x: x || paddle.x + paddle.width / 2,
                 y: y || paddle.y - 8,
                 radius: 6,
-                speed: 4.5,
                 dx: isStuck ? 0 : (Math.random() < 0.5 ? 2.5 : -2.5),
                 dy: isStuck ? 0 : -4,
                 isStuck: isStuck
             };
         }
 
-        // レーザー弾 & パーティクル & アイテム
         let lasers = [];
         let particles = [];
         let items = [];
 
-        // ブロック設定
         const brickRowCount = 5;
         const brickColumnCount = 7;
-        const brickPadding = 6;
-        const brickOffsetTop = 35;
-        const brickOffsetLeft = 12;
+        const brickPadding = 5;
+        const brickOffsetTop = 30;
+        const brickOffsetLeft = 10;
         const brickWidth = (CANVAS_WIDTH - (brickOffsetLeft * 2) - (brickPadding * (brickColumnCount - 1))) / brickColumnCount;
         const brickHeight = 14;
 
@@ -113,41 +106,36 @@
             for (let c = 0; c < brickColumnCount; c++) {
                 bricks[c] = [];
                 for (let r = 0; r < brickRowCount; r++) {
-                    // ランダムでパワーアップアイテムをセット
                     let itemType = null;
                     if (Math.random() < 0.25) {
                         const types = ['WIDE', 'MULTI', 'LASER', 'SLOW'];
                         itemType = types[Math.floor(Math.random() * types.length)];
                     }
                     bricks[c][r] = {
-                        x: 0,
-                        y: 0,
+                        x: 0, y: 0,
                         status: 1,
                         color: brickColors[r % brickColors.length],
-                        hp: r === 0 ? 2 : 1, // 最上段は耐久力2
-                        maxHp: r === 0 ? 2 : 1,
+                        hp: r === 0 ? 2 : 1,
                         item: itemType
                     };
                 }
             }
         }
 
-        // 入力処理
         let leftPressed = false;
         let rightPressed = false;
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftPressed = true;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightPressed = true;
-            if (e.key === ' ' || e.key === 'Spacebar') handleAction();
+            if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = true;
+            if (e.key === ' ') handleAction();
         });
 
         document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') leftPressed = false;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') rightPressed = false;
+            if (e.key === 'ArrowLeft' || e.key === 'a') leftPressed = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') rightPressed = false;
         });
 
-        // タッチ操作ボタンのバインド
         const btnLeft = document.getElementById('btn-left');
         const btnRight = document.getElementById('btn-right');
         const btnAction = document.getElementById('btn-action');
@@ -175,18 +163,15 @@
                     }
                 });
             } else if (gameState === 'PLAYING' && paddle.laserPower) {
-                // レーザー射撃
                 lasers.push({ x: paddle.x + 8, y: paddle.y, dy: -8 });
                 lasers.push({ x: paddle.x + paddle.width - 8, y: paddle.y, dy: -8 });
             }
         }
 
-        // パーティクル生成
         function createParticles(x, y, color) {
             for (let i = 0; i < 8; i++) {
                 particles.push({
-                    x: x,
-                    y: y,
+                    x: x, y: y,
                     dx: (Math.random() - 0.5) * 4,
                     dy: (Math.random() - 0.5) * 4,
                     radius: Math.random() * 2.5 + 1,
@@ -196,7 +181,6 @@
             }
         }
 
-        // ゲーム初期化
         function initGame() {
             score = 0;
             lives = 3;
@@ -219,18 +203,15 @@
             document.getElementById('btn-action').innerText = paddle.laserPower ? '🔫 SHOOT' : '🚀 LAUNCH';
         }
 
-        // メイン更新ルーチン
         function update() {
             if (gameState === 'GAMEOVER' || gameState === 'CLEAR') return;
 
-            // パドル移動
             if (leftPressed && paddle.x > 0) {
                 paddle.x -= paddle.speed;
             } else if (rightPressed && paddle.x + paddle.width < CANVAS_WIDTH) {
                 paddle.x += paddle.speed;
             }
 
-            // スタート待ち状態のボール位置固定
             balls.forEach(b => {
                 if (b.isStuck) {
                     b.x = paddle.x + paddle.width / 2;
@@ -239,7 +220,6 @@
             });
 
             if (gameState === 'PLAYING') {
-                // ボール移動 & 衝突判定
                 for (let i = balls.length - 1; i >= 0; i--) {
                     const b = balls[i];
                     if (b.isStuck) continue;
@@ -247,16 +227,9 @@
                     b.x += b.dx;
                     b.y += b.dy;
 
-                    // 左右壁バウンド
-                    if (b.x + b.radius > CANVAS_WIDTH || b.x - b.radius < 0) {
-                        b.dx = -b.dx;
-                    }
-                    // 上壁バウンド
-                    if (b.y - b.radius < 0) {
-                        b.dy = -b.dy;
-                    }
+                    if (b.x + b.radius > CANVAS_WIDTH || b.x - b.radius < 0) b.dx = -b.dx;
+                    if (b.y - b.radius < 0) b.dy = -b.dy;
 
-                    // パドルとのバウンド判定
                     if (
                         b.y + b.radius >= paddle.y &&
                         b.y - b.radius <= paddle.y + paddle.height &&
@@ -264,42 +237,26 @@
                         b.x <= paddle.x + paddle.width &&
                         b.dy > 0
                     ) {
-                        // 打つ位置によって角度を変える
                         const hitPoint = (b.x - (paddle.x + paddle.width / 2)) / (paddle.width / 2);
-                        const maxAngle = Math.PI / 3; // 最大60度
-                        const angle = hitPoint * maxAngle;
+                        const angle = hitPoint * (Math.PI / 3);
                         const currentSpeed = Math.sqrt(b.dx * b.dx + b.dy * b.dy);
-                        
                         b.dx = currentSpeed * Math.sin(angle);
                         b.dy = -currentSpeed * Math.cos(angle);
                     }
 
-                    // ブロック衝突判定
                     for (let c = 0; c < brickColumnCount; c++) {
                         for (let r = 0; r < brickRowCount; r++) {
                             const brick = bricks[c][r];
                             if (brick.status === 1) {
-                                if (
-                                    b.x > brick.x &&
-                                    b.x < brick.x + brickWidth &&
-                                    b.y > brick.y &&
-                                    b.y < brick.y + brickHeight
-                                ) {
+                                if (b.x > brick.x && b.x < brick.x + brickWidth && b.y > brick.y && b.y < brick.y + brickHeight) {
                                     b.dy = -b.dy;
                                     brick.hp--;
                                     if (brick.hp <= 0) {
                                         brick.status = 0;
                                         score += 10;
                                         createParticles(brick.x + brickWidth / 2, brick.y + brickHeight / 2, brick.color);
-                                        
-                                        // アイテムドロップ
                                         if (brick.item) {
-                                            items.push({
-                                                x: brick.x + brickWidth / 2,
-                                                y: brick.y + brickHeight / 2,
-                                                type: brick.item,
-                                                dy: 2
-                                            });
+                                            items.push({ x: brick.x + brickWidth / 2, y: brick.y + brickHeight / 2, type: brick.item, dy: 2 });
                                         }
                                     }
                                     updateUI();
@@ -308,13 +265,11 @@
                         }
                     }
 
-                    // 底に落ちた判定
                     if (b.y - b.radius > CANVAS_HEIGHT) {
                         balls.splice(i, 1);
                     }
                 }
 
-                // 全てのボールがなくなった場合
                 if (balls.length === 0) {
                     lives--;
                     updateUI();
@@ -326,12 +281,9 @@
                     }
                 }
 
-                // レーザー処理
                 for (let i = lasers.length - 1; i >= 0; i--) {
                     const l = lasers[i];
                     l.y += l.dy;
-
-                    // ブロック衝突
                     for (let c = 0; c < brickColumnCount; c++) {
                         for (let r = 0; r < brickRowCount; r++) {
                             const brick = bricks[c][r];
@@ -353,17 +305,10 @@
                     if (l.y < 0) lasers.splice(i, 1);
                 }
 
-                // アイテム移動＆キャッチ
                 for (let i = items.length - 1; i >= 0; i--) {
                     const item = items[i];
                     item.y += item.dy;
-
-                    if (
-                        item.y >= paddle.y &&
-                        item.y <= paddle.y + paddle.height &&
-                        item.x >= paddle.x &&
-                        item.x <= paddle.x + paddle.width
-                    ) {
+                    if (item.y >= paddle.y && item.y <= paddle.y + paddle.height && item.x >= paddle.x && item.x <= paddle.x + paddle.width) {
                         applyPowerUp(item.type);
                         items.splice(i, 1);
                     } else if (item.y > CANVAS_HEIGHT) {
@@ -371,54 +316,39 @@
                     }
                 }
 
-                // パーティクル更新
                 for (let i = particles.length - 1; i >= 0; i--) {
                     const p = particles[i];
-                    p.x += p.dx;
-                    p.y += p.dy;
-                    p.life--;
+                    p.x += p.dx; p.y += p.dy; p.life--;
                     if (p.life <= 0) particles.splice(i, 1);
                 }
 
-                // レーザーの有効期限管理
                 if (paddle.laserPower) {
                     paddle.laserTimer--;
-                    if (paddle.laserTimer <= 0) {
-                        paddle.laserPower = false;
-                        updateUI();
-                    }
+                    if (paddle.laserTimer <= 0) { paddle.laserPower = false; updateUI(); }
                 }
 
-                // クリア判定
                 let remainingBricks = 0;
                 for (let c = 0; c < brickColumnCount; c++) {
                     for (let r = 0; r < brickRowCount; r++) {
                         if (bricks[c][r].status === 1) remainingBricks++;
                     }
                 }
-                if (remainingBricks === 0) {
-                    showGameOver(true);
-                }
+                if (remainingBricks === 0) showGameOver(true);
             }
         }
 
-        // アイテム効能の適用
         function applyPowerUp(type) {
             score += 20;
-            if (type === 'WIDE') {
-                paddle.width = Math.min(120, paddle.width + 25);
-            } else if (type === 'MULTI') {
+            if (type === 'WIDE') paddle.width = Math.min(120, paddle.width + 25);
+            else if (type === 'MULTI') {
                 const b = balls[0] || { x: paddle.x + paddle.width / 2, y: paddle.y - 10 };
                 balls.push(createBall(b.x, b.y), createBall(b.x, b.y));
             } else if (type === 'LASER') {
                 paddle.laserPower = true;
-                paddle.laserTimer = 400; // 約6.5秒間有効
+                paddle.laserTimer = 400;
                 updateUI();
             } else if (type === 'SLOW') {
-                balls.forEach(b => {
-                    b.dx *= 0.7;
-                    b.dy *= 0.7;
-                });
+                balls.forEach(b => { b.dx *= 0.7; b.dy *= 0.7; });
             }
         }
 
@@ -426,40 +356,28 @@
             gameState = isWin ? 'CLEAR' : 'GAMEOVER';
             const modal = document.getElementById('modal');
             const title = document.getElementById('modal-title');
-            const desc = document.getElementById('modal-desc');
             const finalScore = document.getElementById('final-score');
-
-            if (isWin) {
-                title.innerText = 'STAGE CLEAR! 🎉';
-                title.className = 'text-2xl font-black text-emerald-400 mb-1';
-            } else {
-                title.innerText = 'GAME OVER 💀';
-                title.className = 'text-2xl font-black text-rose-500 mb-1';
-            }
+            title.innerText = isWin ? 'STAGE CLEAR! 🎉' : 'GAME OVER 💀';
+            title.className = isWin ? 'text-2xl font-black text-emerald-400 mb-1' : 'text-2xl font-black text-rose-500 mb-1';
             finalScore.innerText = score;
             modal.classList.remove('hidden');
         }
 
-        // 描画処理
         function draw() {
             ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-            // ブロック描画
             for (let c = 0; c < brickColumnCount; c++) {
                 for (let r = 0; r < brickRowCount; r++) {
                     const brick = bricks[c][r];
                     if (brick.status === 1) {
                         const brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
                         const brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
-                        brick.x = brickX;
-                        brick.y = brickY;
+                        brick.x = brickX; brick.y = brickY;
 
                         ctx.beginPath();
                         ctx.roundRect(brickX, brickY, brickWidth, brickHeight, 3);
                         ctx.fillStyle = brick.hp > 1 ? '#cbd5e1' : brick.color;
                         ctx.fill();
-
-                        // ブロックの内側に光沢線を入れる
                         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
                         ctx.stroke();
                         ctx.closePath();
@@ -467,7 +385,6 @@
                 }
             }
 
-            // パドル描画
             ctx.beginPath();
             ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 5);
             ctx.fillStyle = paddle.laserPower ? '#f59e0b' : '#38bdf8';
@@ -477,7 +394,6 @@
             ctx.shadowBlur = 0;
             ctx.closePath();
 
-            // ボール描画
             balls.forEach(b => {
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
@@ -489,30 +405,22 @@
                 ctx.closePath();
             });
 
-            // レーザー描画
             ctx.fillStyle = '#fbbf24';
-            lasers.forEach(l => {
-                ctx.fillRect(l.x - 1.5, l.y, 3, 10);
-            });
+            lasers.forEach(l => ctx.fillRect(l.x - 1.5, l.y, 3, 10));
 
-            // アイテム描画
             items.forEach(item => {
                 ctx.beginPath();
                 ctx.arc(item.x, item.y, 7, 0, Math.PI * 2);
-                ctx.fillStyle = item.type === 'WIDE' ? '#3b82f6' :
-                                item.type === 'MULTI' ? '#ec4899' :
-                                item.type === 'LASER' ? '#f59e0b' : '#10b981';
+                ctx.fillStyle = item.type === 'WIDE' ? '#3b82f6' : item.type === 'MULTI' ? '#ec4899' : item.type === 'LASER' ? '#f59e0b' : '#10b981';
                 ctx.fill();
                 ctx.fillStyle = '#ffffff';
                 ctx.font = 'bold 8px sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                const label = item.type === 'WIDE' ? 'W' : item.type === 'MULTI' ? 'M' : item.type === 'LASER' ? 'L' : 'S';
-                ctx.fillText(label, item.x, item.y);
+                ctx.fillText(item.type === 'WIDE' ? 'W' : item.type === 'MULTI' ? 'M' : item.type === 'LASER' ? 'L' : 'S', item.x, item.y);
                 ctx.closePath();
             });
 
-            // パーティクル描画
             particles.forEach(p => {
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
@@ -524,7 +432,6 @@
             });
         }
 
-        // メインゲームループ
         function loop() {
             update();
             draw();
