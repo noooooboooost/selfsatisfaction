@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>小学生ラグビー・5mペナルティタックルタイマー</title>
+  <title>小学生ラグビー・5mペナルティタックル訓練</title>
   <style>
     * {
       box-sizing: border-box;
@@ -34,7 +34,6 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      cursor: pointer;
     }
     canvas {
       width: 100%;
@@ -55,48 +54,89 @@
       padding: 16px;
     }
     .hud-top {
-      background: rgba(0,0,0,0.75);
-      padding: 12px;
+      background: rgba(0,0,0,0.8);
+      padding: 10px 12px;
       border-radius: 12px;
       backdrop-filter: blur(4px);
     }
     .title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: bold;
       color: #ffd700;
       text-align: center;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .subtitle {
       font-size: 11px;
-      color: #aaa;
+      color: #00ffcc;
       text-align: center;
     }
     .stats {
       display: flex;
       justify-content: space-around;
-      margin-top: 8px;
-      font-size: 14px;
+      margin-top: 6px;
+      font-size: 13px;
       font-weight: bold;
     }
     
-    .hud-bottom {
-      background: rgba(0, 0, 0, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 10px 16px;
-      border-radius: 20px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: bold;
-      color: #00ffcc;
-      margin-bottom: 12px;
-      backdrop-filter: blur(4px);
+    /* 操作エリア（まっすぐモード用） */
+    .action-zone-straight {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      width: 90%;
+      max-width: 380px;
     }
+    .tackle-btn-big {
+      width: 100%;
+      background: radial-gradient(circle, #ff4d4d 0%, #cc0000 70%, #800000 100%);
+      border: 4px solid #ffffff;
+      border-radius: 20px;
+      padding: 16px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(255, 77, 77, 0.8);
+      cursor: pointer;
+    }
+    .tackle-btn-big:active { transform: scale(0.97); }
+
+    /* 操作エリア（横移動モード用：3ボタン） */
+    .action-zone-lateral {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      width: 95%;
+      max-width: 420px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+    .lat-btn {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      border: 3px solid #fff;
+      border-radius: 16px;
+      padding: 16px 8px;
+      text-align: center;
+      font-size: 15px;
+      font-weight: bold;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.5);
+      cursor: pointer;
+    }
+    .lat-btn:active { transform: scale(0.95); background: linear-gradient(135deg, #1d4ed8, #1e40af); }
+    .lat-btn.left { background: linear-gradient(135deg, #059669, #047857); }
+    .lat-btn.right { background: linear-gradient(135deg, #dc2626, #b91c1c); }
 
     .modal {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.88);
+      background: rgba(0,0,0,0.92);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -106,26 +146,49 @@
       pointer-events: auto;
       z-index: 10;
     }
-    .modal-title { font-size: 22px; font-weight: bold; color: #ffd700; margin-bottom: 12px; }
-    .modal-desc { font-size: 13px; color: #ddd; line-height: 1.6; margin-bottom: 20px; text-align: left; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;}
+    .modal-title { font-size: 20px; font-weight: bold; color: #ffd700; margin-bottom: 10px; }
+    .modal-desc { font-size: 12px; color: #ddd; line-height: 1.5; margin-bottom: 16px; text-align: left; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px;}
     
+    .mode-select {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      width: 100%;
+    }
+    .mode-select-btn {
+      flex: 1;
+      background: #333;
+      border: 2px solid #555;
+      color: #fff;
+      padding: 10px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    .mode-select-btn.active {
+      background: #2563eb;
+      border-color: #ffd700;
+    }
+
     .start-btn {
       background: #28a745;
       color: white;
       border: none;
-      padding: 16px 36px;
-      font-size: 18px;
+      padding: 14px 32px;
+      font-size: 16px;
       font-weight: bold;
-      border-radius: 30px;
+      border-radius: 25px;
       cursor: pointer;
+      box-shadow: 0 4px 15px rgba(40,167,69,0.4);
     }
     
     .feedback-pop {
       position: absolute;
-      top: 35%;
+      top: 38%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 900;
       text-shadow: 0 0 10px #000;
       pointer-events: none;
@@ -146,16 +209,24 @@
 
   <div class="ui-layer">
     <div class="hud-top">
-      <div class="title">ミニラグビー：5mペナルティタックル練習</div>
-      <div class="subtitle">相手がランダムスピードで突進！1.0m〜1.5mで画面タップ！</div>
+      <div class="title" id="hud-title">ミニラグビー：5mペナルティ訓練</div>
+      <div class="subtitle" id="hud-subtitle">モード選択画面</div>
       <div class="stats">
         <div>スコア: <span id="score">0</span></div>
-        <div>回数: <span id="tries">0</span>/5</div>
+        <div>セット: <span id="tries">0</span>/5本</div>
       </div>
     </div>
 
-    <div class="hud-bottom">
-      👆 画面のどこでもタップして腰を落とせ！
+    <!-- まっすぐモード用ボタン -->
+    <div class="action-zone-straight" id="zone-straight">
+      <button class="tackle-btn-big" onclick="onStraightAction()">⚡ 腰を落としてヒット！ (1.0〜1.5m)</button>
+    </div>
+
+    <!-- 横移動モード用3ボタン -->
+    <div class="action-zone-lateral hidden" id="zone-lateral">
+      <button class="lat-btn left" onclick="onLateralAction(-1)">◀ 左へ対応</button>
+      <button class="lat-btn" onclick="onLateralAction(0)">▲ 正面で止める</button>
+      <button class="lat-btn right" onclick="onLateralAction(1)">▶ 右へ対応</button>
     </div>
   </div>
 
@@ -163,13 +234,20 @@
 
   <!-- Start Modal -->
   <div id="start-modal" class="modal">
-    <div class="modal-title">ミニラグビー 5mペナルティ対策</div>
-    <div class="modal-desc">
-      ・相手は5m後ろから、<b>毎回ランダムなスピード（緩急）</b>で突進してきます。<br>
-      ・味方FWも前に出てゲインラインを潰しにいきます。<br>
-      ・間合いが<b>「1.5m〜1.0m」</b>になった瞬間に<b>画面のどこでもタップ</b>して腰を落としましょう！
+    <div class="modal-title">🏉 ラグビー タックル判断訓練</div>
+    
+    <div class="mode-select">
+      <button class="mode-select-btn active" id="btn-mode-straight" onclick="setGameMode('straight')">まっすぐモード<br><span style="font-size:10px;color:#aaa;">タイミング重視</span></button>
+      <button class="mode-select-btn" id="btn-mode-lateral" onclick="setGameMode('lateral')">横移動モード<br><span style="font-size:10px;color:#aaa;">へその向きを見極めろ</span></button>
     </div>
-    <button class="start-btn" onclick="startGame()">練習スタート！</button>
+
+    <div class="modal-desc" id="mode-desc">
+      <b>【まっすぐモード】</b><br>
+      ・5mから相手が突進してきます。<br>
+      ・<b>1.0m〜1.5m</b>のベストな間合いでボタンを押し、低くヒットするタイミングを鍛えます。
+    </div>
+
+    <button class="start-btn" onclick="startGame()">5本1セット スタート！</button>
   </div>
 
   <!-- Result Modal -->
@@ -183,7 +261,6 @@
 <script>
   const canvas = document.getElementById('canvas');
   const ctx = canvas.getContext('2d');
-  const container = document.getElementById('game-container');
   
   let width, height;
   function resize() {
@@ -193,36 +270,47 @@
   window.addEventListener('resize', resize);
   resize();
 
+  let gameMode = 'straight';
   let state = 'INIT';
   let score = 0;
   let currentTry = 0;
   const maxTries = 5;
   
   let distance = 5.0; 
-  let relativeSpeed = 0.08; // 毎本ランダムに変更されます
-  let isTackled = false;
+  let relativeSpeed = 0.07; 
+  let isActionDone = false;
   let resultHistory = [];
+
+  let moveType = 0; // -1: 左, 0: 正面, 1: 右
+  let lateralOffset = 0.0;
+  let hasStepped = false;
 
   const feedback = document.getElementById('feedback');
   const scoreEl = document.getElementById('score');
   const triesEl = document.getElementById('tries');
 
-  container.addEventListener('pointerdown', (e) => {
-    if (state === 'RUNNING') {
-      e.preventDefault();
-      triggerTackle();
+  function setGameMode(mode) {
+    gameMode = mode;
+    document.getElementById('btn-mode-straight').classList.toggle('active', mode === 'straight');
+    document.getElementById('btn-mode-lateral').classList.toggle('active', mode === 'lateral');
+    
+    const desc = document.getElementById('mode-desc');
+    if (mode === 'straight') {
+      desc.innerHTML = "<b>【まっすぐモード】</b><br>・5mから相手が突進。<br>・<b>1.0m〜1.5m</b>のベストな間合いでボタンを押し、低くヒットするタイミングを鍛えます。";
+    } else {
+      desc.innerHTML = "<b>【横移動モード】</b><br>・5mから直進後、<b>2m付近で「右・左・まっすぐ」にステップを踏みます</b>。<br>・相手の<b>へその向き（黄色いマーカー）</b>を見て、[左][正面][右]で素早く迎撃！";
     }
-  });
-
-  window.addEventListener('keydown', (e) => {
-    if (e.code === 'Space' && state === 'RUNNING') {
-      e.preventDefault();
-      triggerTackle();
-    }
-  });
+  }
 
   function startGame() {
     document.getElementById('start-modal').classList.add('hidden');
+    
+    document.getElementById('zone-straight').classList.toggle('hidden', gameMode !== 'straight');
+    document.getElementById('zone-lateral').classList.toggle('hidden', gameMode !== 'lateral');
+    
+    document.getElementById('hud-title').innerText = gameMode === 'straight' ? 'まっすぐモード（タイミング）' : '横移動モード（へそ見極め反応）';
+    document.getElementById('hud-subtitle').innerText = gameMode === 'straight' ? '1.0〜1.5mでヒット！' : '2m付近のへその動きを見抜け！';
+
     score = 0;
     currentTry = 0;
     resultHistory = [];
@@ -245,20 +333,32 @@
     triesEl.innerText = currentTry;
     
     distance = 5.0;
-    // 【スピードランダム化】毎回、遅め〜速め（0.05 〜 0.12 の幅）でランダムに変動
-    relativeSpeed = 0.05 + Math.random() * 0.07; 
-    
-    isTackled = false;
+    relativeSpeed = 0.06 + Math.random() * 0.04; 
+    isActionDone = false;
+    lateralOffset = 0.0;
+    hasStepped = false;
+
+    const rand = Math.random();
+    if (rand < 0.33) moveType = -1;
+    else if (rand < 0.66) moveType = 1;
+    else moveType = 0;
+
     state = 'RUNNING';
   }
 
-  function triggerTackle() {
-    if (state !== 'RUNNING' || isTackled) return;
-    isTackled = true;
-    evaluateTackle(distance);
+  function onStraightAction() {
+    if (state !== 'RUNNING' || isActionDone) return;
+    isActionDone = true;
+    evaluateStraight(distance);
   }
 
-  function evaluateTackle(dist) {
+  function onLateralAction(userChoice) {
+    if (state !== 'RUNNING' || isActionDone) return;
+    isActionDone = true;
+    evaluateLateral(userChoice, distance);
+  }
+
+  function evaluateStraight(dist) {
     let evalText = "";
     let color = "";
     let pts = 0;
@@ -275,7 +375,7 @@
       evalText = "WAY TOO EARLY! (相手がまだ遠い)";
       color = "#ff9900";
       pts = 20;
-    } else if (dist < 1.0 && dist >= 0.5) {
+    } else if (dist < 1.0 && dist >= 0.4) {
       evalText = "TOO LATE! (体勢が高くて押し込まれた)";
       color = "#ff6666";
       pts = 40;
@@ -287,13 +387,44 @@
 
     score += pts;
     scoreEl.innerText = score;
-    resultHistory.push({ dist: dist.toFixed(2), evalText, pts });
+    resultHistory.push({ desc: `距離 ${dist.toFixed(2)}m`, evalText, pts });
 
     showFeedback(evalText, color);
     state = 'RESULT_PAUSE';
-    setTimeout(() => {
-      nextTry();
-    }, 1500);
+    setTimeout(() => { nextTry(); }, 1400);
+  }
+
+  function evaluateLateral(userChoice, dist) {
+    let evalText = "";
+    let color = "";
+    let pts = 0;
+
+    const isCorrect = (userChoice === moveType);
+    const moveStr = moveType === -1 ? "左" : (moveType === 1 ? "右" : "正面");
+
+    if (isCorrect) {
+      if (dist >= 0.6 && dist <= 2.2) {
+        evalText = `ナイス判断！(へそを見破った)`;
+        color = "#00ffcc";
+        pts = 100;
+      } else {
+        evalText = `方向正解！(少し遅い/早い)`;
+        color = "#ffcc00";
+        pts = 60;
+      }
+    } else {
+      evalText = `逆を取られた！ (相手は[${moveStr}])`;
+      color = "#ff0000";
+      pts = 0;
+    }
+
+    score += pts;
+    scoreEl.innerText = score;
+    resultHistory.push({ desc: `相手の動き: ${moveStr}`, evalText, pts });
+
+    showFeedback(evalText, color);
+    state = 'RESULT_PAUSE';
+    setTimeout(() => { nextTry(); }, 1400);
   }
 
   function showFeedback(text, color) {
@@ -311,18 +442,18 @@
     const title = document.getElementById('res-title');
     const desc = document.getElementById('res-desc');
     
-    title.innerText = `最終スコア: ${score}点`;
+    title.innerText = `5本終了！ スコア: ${score}点`;
     
-    let summaryHtml = "<div style='text-align:left; font-size:13px; line-height:1.8;'>";
+    let summaryHtml = "<div style='text-align:left; font-size:12px; line-height:1.7;'>";
     resultHistory.forEach((r, idx) => {
-      summaryHtml += `<b>${idx+1}本目:</b> 距離 <b>${r.dist}m</b> - ${r.evalText}<br>`;
+      summaryHtml += `<b>第${idx+1}本:</b> ${r.desc} - <span style="font-weight:bold;">${r.evalText}</span> (${r.pts}pt)<br>`;
     });
     summaryHtml += "</div><br>";
 
     if (score >= 400) {
-      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい！スピードの緩急に対応して完璧なタイミングで入れてます！</b>";
+      summaryHtml += "<b style='color:#00ffcc;'>素晴らしい反応と判断力です！実戦でもへその向きをしっかり見据えよう！</b>";
     } else {
-      summaryHtml += "スピードが毎回変わる中でも、相手が1.0m〜1.5mに入る瞬間を見極める練習を続けましょう！";
+      summaryHtml += "相手のへその向きの変化を凝視して、切り返しに素早く対応する練習を続けよう！";
     }
 
     desc.innerHTML = summaryHtml;
@@ -336,9 +467,25 @@
 
     if (state === 'RUNNING') {
       distance -= relativeSpeed * (dt * 60);
+
+      if (gameMode === 'lateral' && distance <= 2.2 && !hasStepped) {
+        hasStepped = true;
+      }
+      if (hasStepped && gameMode === 'lateral') {
+        const targetOffset = moveType * 1.2;
+        lateralOffset += (targetOffset - lateralOffset) * 0.12;
+      }
+
       if (distance <= 0) {
         distance = 0;
-        triggerTackle();
+        if (!isActionDone) {
+          isActionDone = true;
+          scoreEl.innerText = score;
+          showFeedback("反応遅れ！ (かわされた)", "#ff0000");
+          resultHistory.push({ desc: "対応できず", evalText: "反応遅れ", pts: 0 });
+          state = 'RESULT_PAUSE';
+          setTimeout(() => { nextTry(); }, 1400);
+        }
       }
     }
   }
@@ -414,28 +561,41 @@
       const runnerY = horizon + (height - horizon) * scale;
       const runnerSize = 160 * scale;
 
-      ctx.save();
-      ctx.translate(vpX, runnerY);
+      const renderX = vpX + (lateralOffset * width * 0.25 * scale);
 
+      ctx.save();
+      ctx.translate(renderX, runnerY);
+
+      // 影
       ctx.fillStyle = 'rgba(0,0,0,0.4)';
       ctx.beginPath();
       ctx.ellipse(0, 0, runnerSize * 0.5, runnerSize * 0.15, 0, 0, Math.PI * 2);
       ctx.fill();
 
+      // 足
       ctx.fillStyle = '#111';
       ctx.fillRect(-runnerSize * 0.2, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
       ctx.fillRect(runnerSize * 0.08, -runnerSize * 0.4, runnerSize * 0.12, runnerSize * 0.4);
 
+      // 胴体 (赤ユニフォーム)
       ctx.fillStyle = '#dc2626';
       ctx.beginPath();
       ctx.roundRect(-runnerSize * 0.3, -runnerSize * 0.9, runnerSize * 0.6, runnerSize * 0.55, 8);
       ctx.fill();
 
+      // ★ おへそ（体幹の向き）マーカー
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(0, -runnerSize * 0.65, runnerSize * 0.08, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 頭
       ctx.fillStyle = '#fca5a5';
       ctx.beginPath();
       ctx.arc(0, -runnerSize * 1.05, runnerSize * 0.18, 0, Math.PI * 2);
       ctx.fill();
 
+      // ボール
       ctx.fillStyle = '#ea580c';
       ctx.beginPath();
       ctx.ellipse(-runnerSize * 0.15, -runnerSize * 0.7, runnerSize * 0.15, runnerSize * 0.1, Math.PI / 4, 0, Math.PI * 2);
@@ -443,12 +603,13 @@
 
       ctx.restore();
 
+      // 残距離
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 24px monospace';
       ctx.textAlign = 'center';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 4;
-      ctx.fillText(`残距離: ${distance.toFixed(2)} m`, vpX, height - 80);
+      ctx.fillText(`残距離: ${distance.toFixed(2)} m`, vpX, height - 90);
       ctx.shadowBlur = 0;
     }
   }
