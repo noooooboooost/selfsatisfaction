@@ -79,7 +79,6 @@
       font-weight: bold;
     }
     
-    /* 操作エリア（まっすぐモード用） */
     .action-zone-straight {
       position: absolute;
       bottom: 20px;
@@ -104,7 +103,6 @@
     }
     .tackle-btn-big:active { transform: scale(0.97); }
 
-    /* 操作エリア（横移動モード用：3ボタン） */
     .action-zone-lateral {
       position: absolute;
       bottom: 20px;
@@ -152,7 +150,7 @@
     .mode-select {
       display: flex;
       gap: 8px;
-      margin-bottom: 16px;
+      margin-bottom: 12px;
       width: 100%;
     }
     .mode-select-btn {
@@ -169,6 +167,41 @@
     .mode-select-btn.active {
       background: #2563eb;
       border-color: #ffd700;
+    }
+
+    /* スピード選択ボタンのデザイン */
+    .speed-section {
+      width: 100%;
+      margin-bottom: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .speed-title {
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+    .speed-select {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+    }
+    .speed-btn {
+      flex: 1;
+      background: #222;
+      border: 2px solid #444;
+      color: #ccc;
+      padding: 8px 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .speed-btn.active {
+      background: #059669;
+      border-color: #00ffcc;
+      color: #fff;
     }
 
     .start-btn {
@@ -241,6 +274,16 @@
       <button class="mode-select-btn" id="btn-mode-lateral" onclick="setGameMode('lateral')">横移動モード<br><span style="font-size:10px;color:#aaa;">へその向きを見極めろ</span></button>
     </div>
 
+    <!-- 横移動モード選択時のみ表示する速度選択 -->
+    <div class="speed-section hidden" id="speed-section">
+      <div class="speed-title">相手の速さ（ステップ対応スピード）：</div>
+      <div class="speed-select">
+        <button class="speed-btn active" id="btn-spd-normal" onclick="setSpeedMode('normal')">普通<br><span style="font-size:9px;">(今の半分の速さ)</span></button>
+        <button class="speed-btn" id="btn-spd-fast" onclick="setSpeedMode('fast')">速い</button>
+        <button class="speed-btn" id="btn-spd-max" onclick="setSpeedMode('max')">最大<br><span style="font-size:9px;">(最高難易度)</span></button>
+      </div>
+    </div>
+
     <div class="modal-desc" id="mode-desc">
       <b>【まっすぐモード】</b><br>
       ・5mから相手が突進してきます。<br>
@@ -271,6 +314,7 @@
   resize();
 
   let gameMode = 'straight';
+  let speedMode = 'normal'; // 'normal', 'fast', 'max'
   let state = 'INIT';
   let score = 0;
   let currentTry = 0;
@@ -294,11 +338,30 @@
     document.getElementById('btn-mode-straight').classList.toggle('active', mode === 'straight');
     document.getElementById('btn-mode-lateral').classList.toggle('active', mode === 'lateral');
     
+    // スピード選択表示の切り替え
+    document.getElementById('speed-section').classList.toggle('hidden', mode !== 'lateral');
+
+    updateDescText();
+  }
+
+  function setSpeedMode(spd) {
+    speedMode = spd;
+    document.getElementById('btn-spd-normal').classList.toggle('active', spd === 'normal');
+    document.getElementById('btn-spd-fast').classList.toggle('active', spd === 'fast');
+    document.getElementById('btn-spd-max').classList.toggle('active', spd === 'max');
+
+    updateDescText();
+  }
+
+  function updateDescText() {
     const desc = document.getElementById('mode-desc');
-    if (mode === 'straight') {
+    if (gameMode === 'straight') {
       desc.innerHTML = "<b>【まっすぐモード】</b><br>・5mから相手が突進。<br>・<b>1.0m〜1.5m</b>のベストな間合いでボタンを押し、低くヒットするタイミングを鍛えます。";
     } else {
-      desc.innerHTML = "<b>【横移動モード】</b><br>・5mから直進後、<b>2m付近で「右・左・まっすぐ」にステップを踏みます</b>。<br>・相手の<b>へその向き（黄色いマーカー）</b>を見て、[左][正面][右]で素早く迎撃！";
+      let spdLabel = "普通（半分の速さ）";
+      if (speedMode === 'fast') spdLabel = "速い";
+      if (speedMode === 'max') spdLabel = "最大";
+      desc.innerHTML = `<b>【横移動モード（設定: ${spdLabel}）】</b><br>・5mから直進後、<b>2m付近で「右・左・まっすぐ」にステップを踏みます</b>。<br>・相手の<b>へその向き（黄色いマーカー）</b>を見て、[左][正面][右]で素早く迎撃！`;
     }
   }
 
@@ -308,7 +371,14 @@
     document.getElementById('zone-straight').classList.toggle('hidden', gameMode !== 'straight');
     document.getElementById('zone-lateral').classList.toggle('hidden', gameMode !== 'lateral');
     
-    document.getElementById('hud-title').innerText = gameMode === 'straight' ? 'まっすぐモード（タイミング）' : '横移動モード（へそ見極め反応）';
+    let spdText = "";
+    if (gameMode === 'lateral') {
+      if (speedMode === 'normal') spdText = " (普通)";
+      if (speedMode === 'fast') spdText = " (速い)";
+      if (speedMode === 'max') spdText = " (最大)";
+    }
+
+    document.getElementById('hud-title').innerText = gameMode === 'straight' ? 'まっすぐモード（タイミング）' : `横移動モード${spdText}`;
     document.getElementById('hud-subtitle').innerText = gameMode === 'straight' ? '1.0〜1.5mでヒット！' : '2m付近のへその動きを見抜け！';
 
     score = 0;
@@ -333,7 +403,23 @@
     triesEl.innerText = currentTry;
     
     distance = 5.0;
-    relativeSpeed = 0.06 + Math.random() * 0.04; 
+
+    // スピードの設定計算
+    if (gameMode === 'straight') {
+      relativeSpeed = 0.06 + Math.random() * 0.04;
+    } else {
+      // 最大: 以前と同じ（0.06〜0.10）
+      // 普通: 今の半分（0.03〜0.05）
+      // 速い: 中間（0.045〜0.075）
+      if (speedMode === 'normal') {
+        relativeSpeed = 0.03 + Math.random() * 0.02;
+      } else if (speedMode === 'fast') {
+        relativeSpeed = 0.045 + Math.random() * 0.03;
+      } else {
+        relativeSpeed = 0.06 + Math.random() * 0.04;
+      }
+    }
+
     isActionDone = false;
     lateralOffset = 0.0;
     hasStepped = false;
@@ -473,7 +559,13 @@
       }
       if (hasStepped && gameMode === 'lateral') {
         const targetOffset = moveType * 1.2;
-        lateralOffset += (targetOffset - lateralOffset) * 0.12;
+
+        // 横移動の速さもスピード設定に応じて調整
+        let stepSpeed = 0.12;
+        if (speedMode === 'normal') stepSpeed = 0.06;
+        if (speedMode === 'fast') stepSpeed = 0.09;
+
+        lateralOffset += (targetOffset - lateralOffset) * stepSpeed;
       }
 
       if (distance <= 0) {
@@ -583,7 +675,7 @@
       ctx.roundRect(-runnerSize * 0.3, -runnerSize * 0.9, runnerSize * 0.6, runnerSize * 0.55, 8);
       ctx.fill();
 
-      // ★ おへそ（体幹の向き）マーカー
+      // おへそマーカー
       ctx.fillStyle = '#fbbf24';
       ctx.beginPath();
       ctx.arc(0, -runnerSize * 0.65, runnerSize * 0.08, 0, Math.PI * 2);
